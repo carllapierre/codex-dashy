@@ -15,6 +15,8 @@ const rangeOptions: Array<{ value: TelemetryRange; label: string }> = [
     { value: '30d', label: '1 month' },
 ];
 
+type DashboardView = 'overview' | 'conversation';
+
 const currencyFormatter = new Intl.NumberFormat('en-US', {
     style: 'currency',
     currency: 'USD',
@@ -25,19 +27,6 @@ function formatCurrency(value: number): string {
     return currencyFormatter.format(value);
 }
 
-function formatDate(value: string): string {
-    const date = new Date(value);
-
-    return Number.isNaN(date.getTime())
-        ? 'Unknown time'
-        : new Intl.DateTimeFormat('en', {
-              month: 'short',
-              day: 'numeric',
-              hour: 'numeric',
-              minute: '2-digit',
-          }).format(date);
-}
-
 function formatDuration(value: number | null): string {
     return value === null ? '—' : `${Math.round(value)} ms`;
 }
@@ -46,7 +35,19 @@ function formatMilliseconds(value: number): string {
     return Math.round(value).toLocaleString('en-US');
 }
 
-function ConversationDetail({ conversation }: { conversation: TelemetryConversation | null }) {
+function getRangeLabel(range: TelemetryRange): string {
+    return rangeOptions.find((option) => option.value === range)?.label ?? range;
+}
+
+function ConversationDetail({
+    conversation,
+    range,
+    model,
+}: {
+    conversation: TelemetryConversation | null;
+    range: TelemetryRange;
+    model: string;
+}) {
     if (!conversation) {
         return (
             <section className="content-card empty-state">
@@ -66,7 +67,9 @@ function ConversationDetail({ conversation }: { conversation: TelemetryConversat
                     <p className="eyebrow">Conversation detail</p>
                     <h2>{conversation.model ?? 'Model unavailable'}</h2>
                 </div>
-                <span className="muted-label">{formatDate(conversation.lastActivityAt)}</span>
+                <span className="muted-label">
+                    {getRangeLabel(range)} · {model === 'all' ? 'All models' : model}
+                </span>
             </div>
             <div className="conversation-detail__prompt">
                 <span className="detail-label">Initial prompt</span>
@@ -113,6 +116,7 @@ export function App() {
     const [connected, setConnected] = useState(false);
     const [range, setRange] = useState<TelemetryRange>('7d');
     const [model, setModel] = useState('all');
+    const [activeView, setActiveView] = useState<DashboardView>('overview');
     const [overview, setOverview] = useState<TelemetryOverview | null>(null);
     const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null);
 
@@ -158,22 +162,35 @@ export function App() {
     );
     const summary = overview?.summary;
     const availableModels = overview?.availableModels ?? [];
+    const selectConversation = useCallback((conversationId: string) => {
+        if (!conversationId) {
+            return;
+        }
+
+        setSelectedConversationId(conversationId);
+        setActiveView('conversation');
+    }, []);
+    const isOverview = activeView === 'overview';
 
     return (
         <div className="app-shell">
             <Sidebar
                 connected={connected}
                 conversations={overview?.conversations ?? []}
+                activeView={activeView}
                 selectedConversationId={selectedConversationId}
-                onSelectConversation={setSelectedConversationId}
+                onSelectOverview={() => setActiveView('overview')}
+                onSelectConversation={selectConversation}
             />
             <main className="main-content">
                 <header className="page-header">
                     <div>
-                        <p className="eyebrow">Global overview</p>
-                        <h1>Codex usage</h1>
+                        <p className="eyebrow">{isOverview ? 'Global overview' : 'Conversation'}</p>
+                        <h1>{isOverview ? 'Codex usage' : 'Conversation usage'}</h1>
                         <p className="page-header__description">
-                            A global view of your Codex activity on this machine.
+                            {isOverview
+                                ? 'A global view of your Codex activity on this machine.'
+                                : 'Inspect token usage for the selected conversation.'}
                         </p>
                     </div>
                     <div className="live-pill">
@@ -184,7 +201,10 @@ export function App() {
                     </div>
                 </header>
 
-                <section className="filter-bar" aria-label="Overview filters">
+                <section
+                    className="filter-bar"
+                    aria-label={`${isOverview ? 'Overview' : 'Conversation'} filters`}
+                >
                     <div className="filter-group">
                         <span className="detail-label">Time window</span>
                         <div className="range-tabs" role="group" aria-label="Time window">
@@ -217,44 +237,56 @@ export function App() {
                     </label>
                 </section>
 
-                <section className="stats-grid" aria-label="Usage summary">
-                    <StatCard label="Total tokens" value={summary?.totalTokens ?? 0} icon="✦" />
-                    <StatCard
-                        label="Estimated cost"
-                        value={summary?.estimatedCostUsd ?? null}
-                        icon="$"
-                        format={formatCurrency}
-                    />
-                    <StatCard
-                        label="Conversations"
-                        value={summary?.conversationCount ?? 0}
-                        icon="◎"
-                    />
-                    <StatCard
-                        label="Average TTFT"
-                        value={summary?.averageTtftMs ?? 0}
-                        suffix="ms"
-                        icon="↗"
-                        format={formatMilliseconds}
-                    />
-                </section>
+                {isOverview ? (
+                    <>
+                        <section className="stats-grid" aria-label="Usage summary">
+                            <StatCard
+                                label="Total tokens"
+                                value={summary?.totalTokens ?? 0}
+                                icon="✦"
+                            />
+                            <StatCard
+                                label="Estimated cost"
+                                value={summary?.estimatedCostUsd ?? null}
+                                icon="$"
+                                format={formatCurrency}
+                            />
+                            <StatCard
+                                label="Conversations"
+                                value={summary?.conversationCount ?? 0}
+                                icon="◎"
+                            />
+                            <StatCard
+                                label="Average TTFT"
+                                value={summary?.averageTtftMs ?? 0}
+                                suffix="ms"
+                                icon="↗"
+                                format={formatMilliseconds}
+                            />
+                        </section>
 
-                <section className="content-card chart-card">
-                    <div className="section-heading">
-                        <div>
-                            <p className="eyebrow">Usage trend</p>
-                            <h2>Token activity</h2>
-                        </div>
-                        <span className="muted-label">
-                            {overview?.trend.some((point) => point.totalTokens > 0)
-                                ? `${range} window`
-                                : 'No events yet'}
-                        </span>
-                    </div>
-                    {overview ? <UsageChart points={overview.trend} /> : <EmptyChart />}
-                </section>
-
-                <ConversationDetail conversation={selectedConversation} />
+                        <section className="content-card chart-card">
+                            <div className="section-heading">
+                                <div>
+                                    <p className="eyebrow">Usage trend</p>
+                                    <h2>Token activity</h2>
+                                </div>
+                                <span className="muted-label">
+                                    {overview?.trend.some((point) => point.totalTokens > 0)
+                                        ? `${range} window`
+                                        : 'No events yet'}
+                                </span>
+                            </div>
+                            {overview ? <UsageChart points={overview.trend} /> : <EmptyChart />}
+                        </section>
+                    </>
+                ) : (
+                    <ConversationDetail
+                        conversation={selectedConversation}
+                        range={range}
+                        model={model}
+                    />
+                )}
             </main>
         </div>
     );

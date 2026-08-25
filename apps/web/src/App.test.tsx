@@ -89,5 +89,10 @@ describe('App', () => {
 
         fireEvent.click(screen.getByRole('button', { name: /Second session/ }));
         expect(await screen.findByRole('heading', { name: 'gpt-5.6-terra' })).toBeVisible();
+        expect(screen.queryByRole('heading', { name: 'Codex usage' })).not.toBeInTheDocument();
+        expect(screen.getByRole('heading', { name: 'Conversation usage' })).toBeVisible();
+
+        fireEvent.click(screen.getByRole('button', { name: 'Overview' }));
+        expect(screen.getByRole('heading', { name: 'Codex usage' })).toBeVisible();
     });
 });

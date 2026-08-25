@@ -4,7 +4,9 @@ import { formatCompactNumber } from './ui/animated-number';
 type SidebarProps = {
     connected: boolean;
     conversations: TelemetryConversation[];
+    activeView: 'overview' | 'conversation';
     selectedConversationId: string | null;
+    onSelectOverview: () => void;
     onSelectConversation: (conversationId: string) => void;
 };
 
@@ -22,7 +24,9 @@ function getPromptLabel(conversation: TelemetryConversation): string {
 export function Sidebar({
     connected,
     conversations,
+    activeView,
     selectedConversationId,
+    onSelectOverview,
     onSelectConversation,
 }: SidebarProps) {
     return (
@@ -36,11 +40,20 @@ export function Sidebar({
             </div>
 
             <nav className="sidebar__nav" aria-label="Main navigation">
-                <button className="nav-item nav-item--active" type="button">
+                <button
+                    className={`nav-item ${activeView === 'overview' ? 'nav-item--active' : ''}`}
+                    type="button"
+                    onClick={onSelectOverview}
+                >
                     <span aria-hidden="true">◈</span>
                     Overview
                 </button>
-                <button className="nav-item" type="button">
+                <button
+                    className={`nav-item ${activeView === 'conversation' ? 'nav-item--active' : ''}`}
+                    type="button"
+                    onClick={() => onSelectConversation(conversations[0]?.id ?? '')}
+                    disabled={conversations.length === 0}
+                >
                     <span aria-hidden="true">▦</span>
                     Conversations
                     <span className="nav-item__count">{conversations.length}</span>

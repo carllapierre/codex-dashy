@@ -4,6 +4,16 @@
 
 Codex Dashy is a local-first dashboard for inspecting Codex telemetry. It receives local OTLP logs, stores sanitized batches in SQLite, and presents global usage alongside conversation-level token spend.
 
+## Quick start
+
+Launch the Codex usage bridge, Docker dashboard, API, and local OTLP endpoint together:
+
+```bash
+npm run start:all
+```
+
+Open the dashboard at [http://localhost:8789](http://localhost:8789). Configure Codex to send telemetry to `http://127.0.0.1:8789/v1/logs`. Stop both processes with `Ctrl-C`.
+
 ## Stack
 
 - TypeScript Node backend with Fastify
@@ -36,6 +46,22 @@ Change the host port without changing the internal API port:
 ```bash
 HOST_PORT=8790 docker compose up --build -d
 ```
+
+## Codex account limits
+
+Codex Dashy can also display authenticated ChatGPT/Codex usage limits through the supported [Codex App Server](https://learn.chatgpt.com/docs/app-server) interface. The bridge reuses Codex's existing local authentication and exposes only normalized usage data over a loopback-only HTTP endpoint; it does not read or persist auth tokens.
+
+The equivalent two-terminal workflow is:
+
+```bash
+npm run codex:bridge
+```
+
+```bash
+docker compose up --build -d
+```
+
+The Overview displays real rate-limit windows when Codex provides them, including the five-hour and weekly windows, plus workspace allowance details when available. It also requests account token-activity summaries. If the bridge is unavailable, the dashboard shows an explicit unavailable state instead of displaying fabricated values.
 
 ## Codex telemetry
 

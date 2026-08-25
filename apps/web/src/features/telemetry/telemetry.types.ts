@@ -1,5 +1,32 @@
 export type TelemetryRange = '1d' | '7d' | '30d';
 
+export type CodexUsageWindow = {
+    usedPercent?: number;
+    windowDurationMins?: number;
+    resetsAt?: number;
+    [key: string]: unknown;
+};
+
+export type CodexUsageBucket = {
+    limitId?: string;
+    limitName?: string | null;
+    primary?: CodexUsageWindow | null;
+    secondary?: CodexUsageWindow | null;
+    individualLimit?: Record<string, unknown> | null;
+    planType?: string | null;
+    [key: string]: unknown;
+};
+
+export type CodexUsageSnapshot = {
+    available: boolean;
+    fetchedAt: string | null;
+    rateLimits: CodexUsageBucket | null;
+    rateLimitsByLimitId: Record<string, CodexUsageBucket> | null;
+    rateLimitResetCredits: Record<string, unknown> | null;
+    usage: Record<string, unknown> | null;
+    error: string | null;
+};
+
 export type ModelRate = {
     model: string;
     inputPerMillionUsd: number;

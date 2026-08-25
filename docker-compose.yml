@@ -5,6 +5,10 @@ services:
             dockerfile: Dockerfile
         env_file:
             - .env
+        environment:
+            CODEX_USAGE_BRIDGE_URL: ${CODEX_USAGE_BRIDGE_URL:-http://host.docker.internal:8790}
+        extra_hosts:
+            - 'host.docker.internal:host-gateway'
         ports:
             - '127.0.0.1:${HOST_PORT:-8789}:8789'
         volumes:

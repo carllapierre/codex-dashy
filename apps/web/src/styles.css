@@ -365,6 +365,95 @@ h2 {
     padding: 0 var(--space-5);
 }
 
+.codex-usage-panel {
+    margin-bottom: 0;
+    padding: var(--space-7);
+}
+
+.overview-visuals {
+    align-items: stretch;
+    display: grid;
+    gap: var(--space-7);
+    grid-template-columns: minmax(0, 1.45fr) minmax(290px, 0.75fr);
+}
+
+.codex-usage-grid {
+    display: grid;
+    gap: var(--space-5);
+    grid-template-columns: 1fr;
+    margin-top: var(--space-7);
+}
+
+.codex-usage-card {
+    align-items: center;
+    background: var(--color-control-background);
+    border: 1px solid var(--color-border-subtle);
+    border-radius: var(--radius-lg);
+    display: flex;
+    gap: var(--space-6);
+    min-height: 104px;
+    padding: var(--space-4);
+}
+
+.codex-usage-card__ring {
+    flex: 0 0 68px;
+    height: 68px;
+    position: relative;
+    width: 68px;
+}
+
+.codex-usage-card__ring svg {
+    display: block;
+    height: 100%;
+    transform: rotate(-90deg);
+    width: 100%;
+}
+
+.codex-usage-card__ring circle {
+    fill: none;
+    stroke-width: 2;
+}
+
+.codex-usage-card__track {
+    stroke: var(--color-border-subtle);
+}
+
+.codex-usage-card__progress {
+    stroke: var(--color-violet-3);
+    stroke-linecap: round;
+    transition: stroke-dashoffset var(--motion-duration-normal) var(--motion-ease-standard);
+}
+
+.codex-usage-card__ring strong {
+    color: var(--color-text-primary);
+    font-size: var(--font-size-lg);
+    left: 50%;
+    position: absolute;
+    top: 50%;
+    transform: translate(-50%, -50%);
+}
+
+.codex-usage-card__content {
+    display: grid;
+    gap: var(--space-2);
+    min-width: 0;
+}
+
+.codex-usage-card__meta,
+.codex-usage-panel__empty {
+    color: var(--color-text-muted);
+    font-size: var(--font-size-sm);
+}
+
+.codex-usage-panel__empty {
+    line-height: 1.6;
+    margin: var(--space-7) 0 0;
+}
+
+.codex-usage-panel .section-heading {
+    align-items: baseline;
+}
+
 .stats-grid {
     display: grid;
     gap: var(--space-5);
@@ -956,6 +1045,10 @@ h2 {
 
     .stats-grid {
         grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .overview-visuals {
+        grid-template-columns: 1fr;
     }
 
     .conversation-detail__stats {

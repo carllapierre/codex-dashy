@@ -6,6 +6,7 @@ export type AppConfig = {
     databaseFile: string;
     corsOrigin: string;
     webDistDirectory: string;
+    codexUsageBridgeUrl?: string;
 };
 
 function readPort(value: string | undefined): number {
@@ -27,5 +28,6 @@ export function loadConfig(): AppConfig {
         databaseFile: process.env.DB_FILE ?? path.resolve('data/codex-dashy.db'),
         corsOrigin: process.env.CORS_ORIGIN ?? 'http://localhost:5173',
         webDistDirectory: process.env.WEB_DIST_DIR ?? defaultWebDistDirectory,
+        codexUsageBridgeUrl: process.env.CODEX_USAGE_BRIDGE_URL ?? 'http://127.0.0.1:8790',
     };
 }

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { EmptyChart } from './components/empty-chart';
+import { CodexUsageLimits } from './components/codex-usage-limits';
 import { ModelRatesPage } from './components/model-rates-page';
 import { Sidebar } from './components/sidebar';
 import { UsageChart } from './components/usage-chart';
@@ -7,6 +8,7 @@ import { StatCard } from './components/ui/stat-card';
 import { MarkdownContent } from './components/ui/markdown-content';
 import type {
     TelemetryConversation,
+    CodexUsageSnapshot,
     TelemetryOverview,
     TelemetryRange,
 } from './features/telemetry/telemetry.types';
@@ -154,13 +156,17 @@ export function App() {
     const [model, setModel] = useState('all');
     const [activeView, setActiveView] = useState<DashboardView>('overview');
     const [overview, setOverview] = useState<TelemetryOverview | null>(null);
+    const [codexUsage, setCodexUsage] = useState<CodexUsageSnapshot | null>(null);
     const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null);
 
     const loadOverview = useCallback(async () => {
         try {
-            const response = await fetch(
-                `/api/telemetry/overview?range=${range}&model=${encodeURIComponent(model)}&timezone=${encodeURIComponent(localTimeZone)}`,
-            );
+            const [response, codexUsageResponse] = await Promise.all([
+                fetch(
+                    `/api/telemetry/overview?range=${range}&model=${encodeURIComponent(model)}&timezone=${encodeURIComponent(localTimeZone)}`,
+                ),
+                fetch('/api/codex/usage'),
+            ]);
 
             if (!response.ok) {
                 throw new Error('Unable to load telemetry overview');
@@ -168,6 +174,10 @@ export function App() {
 
             const nextOverview = (await response.json()) as TelemetryOverview;
             setOverview(nextOverview);
+
+            if (codexUsageResponse.ok) {
+                setCodexUsage((await codexUsageResponse.json()) as CodexUsageSnapshot);
+            }
         } catch {
             // Keep the last successful snapshot visible while the next poll retries.
         }
@@ -306,19 +316,22 @@ export function App() {
                             />
                         </section>
 
-                        <section className="content-card chart-card">
-                            <div className="section-heading">
-                                <div>
-                                    <p className="eyebrow">Usage trend</p>
-                                    <h2>Token activity</h2>
+                        <section className="overview-visuals">
+                            <section className="content-card chart-card">
+                                <div className="section-heading">
+                                    <div>
+                                        <p className="eyebrow">Usage trend</p>
+                                        <h2>Token activity</h2>
+                                    </div>
+                                    <span className="muted-label">
+                                        {overview?.trend.some((point) => point.totalTokens > 0)
+                                            ? `${range} window`
+                                            : 'No events yet'}
+                                    </span>
                                 </div>
-                                <span className="muted-label">
-                                    {overview?.trend.some((point) => point.totalTokens > 0)
-                                        ? `${range} window`
-                                        : 'No events yet'}
-                                </span>
-                            </div>
-                            {overview ? <UsageChart points={overview.trend} /> : <EmptyChart />}
+                                {overview ? <UsageChart points={overview.trend} /> : <EmptyChart />}
+                            </section>
+                            <CodexUsageLimits snapshot={codexUsage} />
                         </section>
                     </>
                 ) : isSettings ? (

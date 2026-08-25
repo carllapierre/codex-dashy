@@ -39,11 +39,9 @@ button {
 }
 
 .brand,
-.sidebar__footer,
 .nav-item,
 .stat-card__topline,
-.section-heading,
-.live-pill {
+.section-heading {
     align-items: center;
     display: flex;
 }
@@ -55,9 +53,9 @@ button {
 
 .brand__mark {
     align-items: center;
-    background: linear-gradient(135deg, var(--color-violet-4), var(--color-violet-3));
+    background: var(--color-violet-4);
     border-radius: var(--radius-lg);
-    color: var(--color-brand-ink);
+    color: var(--color-violet-1);
     display: flex;
     font-size: 18px;
     font-weight: var(--font-weight-extrabold);
@@ -80,8 +78,7 @@ button {
 .brand__caption,
 .eyebrow,
 .muted-label,
-.stat-card__label,
-.sidebar__footer {
+.stat-card__label {
     color: var(--color-text-muted);
     font-size: var(--font-size-xs);
     letter-spacing: var(--tracking-label);
@@ -133,13 +130,6 @@ button {
 
 .nav-item__count {
     margin-left: auto;
-}
-
-.sidebar__footer {
-    gap: var(--space-3);
-    margin-top: auto;
-    padding: 0 var(--space-3);
-    text-transform: none;
 }
 
 .sidebar__conversations {
@@ -253,19 +243,6 @@ button {
     margin: var(--space-3);
 }
 
-.connection-dot {
-    background: var(--color-text-subtle);
-    border-radius: 50%;
-    display: inline-block;
-    height: 7px;
-    width: 7px;
-}
-
-.connection-dot--live {
-    background: var(--color-success);
-    box-shadow: var(--shadow-live);
-}
-
 .main-content {
     margin: 0 auto;
     max-width: 1320px;
@@ -309,18 +286,9 @@ h2 {
     margin-bottom: 0;
 }
 
-.live-pill {
-    border: 1px solid var(--color-success-border);
-    border-radius: var(--radius-pill);
-    color: var(--color-ink-2);
-    font-size: var(--font-size-sm);
-    gap: var(--space-3);
-    padding: var(--space-3) var(--space-5);
-}
-
 .filter-bar {
     align-items: flex-end;
-    background: var(--color-surface-overlay);
+    background: var(--color-panel-background);
     border: 1px solid var(--color-border-subtle);
     border-radius: var(--radius-lg);
     display: flex;
@@ -347,7 +315,7 @@ h2 {
 }
 
 .range-tabs {
-    background: var(--color-night-1);
+    background: var(--color-control-background);
     border: 1px solid var(--color-border-subtle);
     border-radius: var(--radius-md);
     display: flex;
@@ -376,7 +344,7 @@ h2 {
 
 .filter-select {
     appearance: none;
-    background: var(--color-night-1);
+    background: var(--color-control-background);
     border: 1px solid var(--color-border);
     border-radius: var(--radius-md);
     color: var(--color-text-primary);
@@ -395,7 +363,7 @@ h2 {
 
 .stat-card,
 .content-card {
-    background: linear-gradient(145deg, var(--color-card-start), var(--color-card-end));
+    background: var(--color-panel-background);
     border: 1px solid var(--color-border);
     border-radius: var(--radius-xl);
     box-shadow: var(--shadow-card);
@@ -521,7 +489,7 @@ h2 {
 }
 
 .usage-chart__latest {
-    fill: var(--color-teal-1);
+    fill: var(--color-violet-3);
     stroke: var(--color-night-2);
     stroke-width: 3;
 }
@@ -553,12 +521,12 @@ h2 {
 }
 
 .usage-chart__latest {
-    background: var(--color-teal-1);
+    background: var(--color-violet-3);
 }
 
 .usage-chart__active-dot {
-    background: var(--color-teal-1);
-    box-shadow: 0 0 0 4px var(--color-success-soft);
+    background: var(--color-violet-3);
+    box-shadow: 0 0 0 4px var(--color-accent-soft-strong);
 }
 
 .usage-chart__tooltip {
@@ -773,12 +741,6 @@ h2 {
         max-height: 220px;
     }
 
-    .sidebar__footer {
-        position: absolute;
-        right: var(--space-6);
-        top: 31px;
-    }
-
     .main-content {
         padding: var(--space-10) var(--space-6) var(--space-12);
     }
@@ -786,11 +748,6 @@ h2 {
     .page-header {
         display: block;
         margin-bottom: var(--space-10);
-    }
-
-    .live-pill {
-        display: inline-flex;
-        margin-top: var(--space-7);
     }
 
     .filter-bar {

@@ -2,7 +2,6 @@ import type { TelemetryConversation } from '../features/telemetry/telemetry.type
 import { formatCompactNumber } from './ui/animated-number';
 
 type SidebarProps = {
-    connected: boolean;
     conversations: TelemetryConversation[];
     activeView: 'overview' | 'conversation';
     selectedConversationId: string | null;
@@ -22,7 +21,6 @@ function getPromptLabel(conversation: TelemetryConversation): string {
 }
 
 export function Sidebar({
-    connected,
     conversations,
     activeView,
     selectedConversationId,
@@ -49,7 +47,6 @@ export function Sidebar({
                             strokeLinecap="round"
                             strokeWidth="4"
                         />
-                        <circle cx="38" cy="10" fill="var(--color-teal-1)" r="4" />
                     </svg>
                 </div>
                 <div>
@@ -117,11 +114,6 @@ export function Sidebar({
                     </p>
                 )}
             </section>
-
-            <div className="sidebar__footer">
-                <span className={`connection-dot ${connected ? 'connection-dot--live' : ''}`} />
-                {connected ? 'API connected' : 'Waiting for API'}
-            </div>
         </aside>
     );
 }

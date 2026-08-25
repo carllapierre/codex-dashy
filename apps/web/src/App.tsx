@@ -140,7 +140,6 @@ function ConversationDetail({
 }
 
 export function App() {
-    const [connected, setConnected] = useState(false);
     const [range, setRange] = useState<TelemetryRange>('7d');
     const [model, setModel] = useState('all');
     const [activeView, setActiveView] = useState<DashboardView>('overview');
@@ -159,9 +158,8 @@ export function App() {
 
             const nextOverview = (await response.json()) as TelemetryOverview;
             setOverview(nextOverview);
-            setConnected(true);
         } catch {
-            setConnected(false);
+            // Keep the last successful snapshot visible while the next poll retries.
         }
     }, [model, range]);
 
@@ -202,7 +200,6 @@ export function App() {
     return (
         <div className="app-shell">
             <Sidebar
-                connected={connected}
                 conversations={overview?.conversations ?? []}
                 activeView={activeView}
                 selectedConversationId={selectedConversationId}
@@ -212,19 +209,12 @@ export function App() {
             <main className="main-content">
                 <header className="page-header">
                     <div>
-                        <p className="eyebrow">{isOverview ? 'Global overview' : 'Conversation'}</p>
                         <h1>{isOverview ? 'Codex usage' : 'Conversation usage'}</h1>
                         <p className="page-header__description">
                             {isOverview
                                 ? 'A global view of your Codex activity on this machine.'
                                 : 'Inspect token usage for the selected conversation.'}
                         </p>
-                    </div>
-                    <div className="live-pill">
-                        <span
-                            className={`connection-dot ${connected ? 'connection-dot--live' : ''}`}
-                        />
-                        {connected ? 'Live updates' : 'Waiting for telemetry'}
                     </div>
                 </header>
 

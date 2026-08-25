@@ -6,13 +6,22 @@ Codex Dashy is a local-first dashboard for inspecting Codex telemetry. It receiv
 
 ## Quick start
 
-Launch the Codex usage bridge, Docker dashboard, API, and local OTLP endpoint together:
+Configure Codex to send local telemetry by adding this to `~/.codex/config.toml`:
+
+```toml
+[otel]
+environment = "local"
+log_user_prompt = true
+exporter = { otlp-http = { endpoint = "http://127.0.0.1:8789/v1/logs", protocol = "json" } }
+```
+
+Restart Codex after changing the configuration, then launch the Codex usage bridge, Docker dashboard, API, and local OTLP endpoint together:
 
 ```bash
 npm run start:all
 ```
 
-Open the dashboard at [http://localhost:8789](http://localhost:8789). Configure Codex to send telemetry to `http://127.0.0.1:8789/v1/logs`. Stop both processes with `Ctrl-C`.
+Open the dashboard at [http://localhost:8789](http://localhost:8789). Stop both processes with `Ctrl-C`.
 
 ## Stack
 
@@ -65,16 +74,7 @@ The Overview displays real rate-limit windows when Codex provides them, includin
 
 ## Codex telemetry
 
-Add the following to the user-level Codex config at `~/.codex/config.toml`:
-
-```toml
-[otel]
-environment = "local"
-log_user_prompt = true
-exporter = { otlp-http = { endpoint = "http://127.0.0.1:8789/v1/logs", protocol = "json" } }
-```
-
-Restart Codex after changing the configuration. The dashboard uses the captured conversation ID, initial user prompt, model, token counts, response timing, tool activity, and completed responses. It does not infer project attribution from local session files.
+The dashboard uses the captured conversation ID, initial user prompt, model, token counts, response timing, tool activity, and completed responses. It does not infer project attribution from local session files.
 
 The overview supports 1-day, 1-week, and 1-month calendar windows based on the browser's local time zone, plus filtering by observed model. Internal Codex title-generation sessions are excluded from conversation counts and usage totals so they do not appear as duplicate user conversations. The conversation list updates every five seconds while the API is available. Estimated cost is based on the configured model rate table and should be treated as an estimate rather than subscription billing.
 

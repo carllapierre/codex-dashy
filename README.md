@@ -1,5 +1,9 @@
 # Codex Dashy
 
+<p align="center">
+    <img src="docs/codex-dashy-banner.svg" alt="Codex Dashy — local Codex telemetry dashboard" width="100%" />
+</p>
+
 Codex Dashy is a local-first dashboard for inspecting Codex telemetry. It receives local OTLP logs, stores sanitized batches in SQLite, and presents global usage alongside conversation-level token spend.
 
 ## Stack

@@ -50,6 +50,10 @@ function readString(attributes: Record<string, TelemetryAttribute>, key: string)
     return typeof value === 'string' && value.length > 0 ? value : null;
 }
 
+function isTitleGenerationPrompt(prompt: string): boolean {
+    return prompt.includes('Generate a concise UI title') && prompt.includes('User prompt:');
+}
+
 function readUserPrompt(attributes: Record<string, TelemetryAttribute>): string | null {
     const prompt = readString(attributes, 'prompt');
 
@@ -57,9 +61,7 @@ function readUserPrompt(attributes: Record<string, TelemetryAttribute>): string 
         return null;
     }
 
-    const isTitleGenerationPrompt =
-        prompt.includes('Generate a concise UI title') && prompt.includes('User prompt:');
-    if (!isTitleGenerationPrompt) {
+    if (!isTitleGenerationPrompt(prompt)) {
         return prompt;
     }
 
@@ -185,28 +187,97 @@ function toConversation(accumulator: UsageAccumulator): TelemetryConversation {
     };
 }
 
-function rangeStart(now: Date, range: TelemetryRange): Date {
-    const start = new Date(now.getTime() - RANGE_DAYS[range] * 24 * 60 * 60 * 1000);
+function readDateParts(date: Date, timeZone: string): { year: number; month: number; day: number } {
+    const parts = new Intl.DateTimeFormat('en-CA', {
+        calendar: 'iso8601',
+        day: '2-digit',
+        month: '2-digit',
+        timeZone,
+        year: 'numeric',
+    }).formatToParts(date);
+    const values = Object.fromEntries(
+        parts
+            .filter(({ type }) => type === 'year' || type === 'month' || type === 'day')
+            .map(({ type, value }) => [type, Number(value)]),
+    ) as Record<'year' | 'month' | 'day', number>;
 
-    if (range === '1d') {
-        start.setMinutes(0, 0, 0);
-    } else {
-        start.setHours(0, 0, 0, 0);
-    }
+    return values;
+}
 
-    return start;
+function getTimeZoneOffsetMs(timestamp: number, timeZone: string): number {
+    const parts = new Intl.DateTimeFormat('en-US', {
+        calendar: 'iso8601',
+        day: '2-digit',
+        hour: '2-digit',
+        hourCycle: 'h23',
+        minute: '2-digit',
+        month: '2-digit',
+        second: '2-digit',
+        timeZone,
+        year: 'numeric',
+    }).formatToParts(new Date(timestamp));
+    const values = Object.fromEntries(
+        parts
+            .filter(
+                ({ type }) =>
+                    type === 'year' ||
+                    type === 'month' ||
+                    type === 'day' ||
+                    type === 'hour' ||
+                    type === 'minute' ||
+                    type === 'second',
+            )
+            .map(({ type, value }) => [type, Number(value)]),
+    ) as Record<'year' | 'month' | 'day' | 'hour' | 'minute' | 'second', number>;
+
+    return (
+        Date.UTC(
+            values.year,
+            values.month - 1,
+            values.day,
+            values.hour,
+            values.minute,
+            values.second,
+        ) - timestamp
+    );
+}
+
+function localMidnight(year: number, month: number, day: number, timeZone: string): number {
+    const utcCandidate = Date.UTC(year, month - 1, day);
+    const firstOffset = getTimeZoneOffsetMs(utcCandidate, timeZone);
+    const adjustedCandidate = utcCandidate - firstOffset;
+    const correctedOffset = getTimeZoneOffsetMs(adjustedCandidate, timeZone);
+
+    return utcCandidate - correctedOffset;
+}
+
+function rangeStart(now: Date, range: TelemetryRange, timeZone: string): Date {
+    const currentDate = readDateParts(now, timeZone);
+    const startDate = new Date(
+        Date.UTC(currentDate.year, currentDate.month - 1, currentDate.day - RANGE_DAYS[range] + 1),
+    );
+
+    return new Date(
+        localMidnight(
+            startDate.getUTCFullYear(),
+            startDate.getUTCMonth() + 1,
+            startDate.getUTCDate(),
+            timeZone,
+        ),
+    );
 }
 
 function createTrend(
     now: Date,
     range: TelemetryRange,
+    timeZone: string,
     events: Array<{
         timestamp: number;
         model: string | null;
         attributes: Record<string, TelemetryAttribute>;
     }>,
 ): TelemetryTrendPoint[] {
-    const start = rangeStart(now, range);
+    const start = rangeStart(now, range, timeZone);
     const bucketMs = range === '1d' ? 60 * 60 * 1000 : 24 * 60 * 60 * 1000;
     const bucketCount = Math.ceil((now.getTime() - start.getTime()) / bucketMs);
     const buckets = Array.from({ length: Math.max(bucketCount, 1) }, (_, index) => ({
@@ -229,6 +300,7 @@ function createTrend(
             month: 'short',
             day: 'numeric',
             ...(range === '1d' ? { hour: 'numeric' } : {}),
+            timeZone,
         }),
         totalTokens: totals.inputTokens + totals.outputTokens,
         estimatedCostUsd: toCost(totals),
@@ -256,16 +328,34 @@ export class GetTelemetryOverviewUseCase {
         private readonly now: () => Date = () => new Date(),
     ) {}
 
-    public execute(range: TelemetryRange = '7d', model: string | null = null): TelemetryOverview {
+    public execute(
+        range: TelemetryRange = '7d',
+        model: string | null = null,
+        timeZone = 'UTC',
+    ): TelemetryOverview {
         const now = this.now();
-        const cutoff = rangeStart(now, range).getTime();
-        const allEvents = getStoredEvents(this.repository.list(), cutoff);
+        const cutoff = rangeStart(now, range, timeZone).getTime();
+        const storedEvents = getStoredEvents(this.repository.list(), Number.NEGATIVE_INFINITY);
+        const internalConversationIds = new Set(
+            storedEvents
+                .filter(
+                    (event) =>
+                        event.eventName === 'codex.user_prompt' &&
+                        event.conversationId !== null &&
+                        isTitleGenerationPrompt(readString(event.attributes, 'prompt') ?? ''),
+                )
+                .map((event) => event.conversationId as string),
+        );
+        const allEvents = storedEvents.filter((event) => event.timestamp >= cutoff);
+        const visibleEvents = allEvents.filter(
+            (event) => !internalConversationIds.has(event.conversationId ?? ''),
+        );
         const availableModels = [
-            ...new Set(allEvents.map((event) => event.model).filter(Boolean)),
+            ...new Set(visibleEvents.map((event) => event.model).filter(Boolean)),
         ] as string[];
         const filteredEvents = model
-            ? allEvents.filter((event) => event.model === model)
-            : allEvents;
+            ? visibleEvents.filter((event) => event.model === model)
+            : visibleEvents;
         const conversations = new Map<string, UsageAccumulator>();
         const totals = createTotals();
         const tokenEvents: Array<{
@@ -337,7 +427,7 @@ export class GetTelemetryOverviewUseCase {
             availableModels,
             generatedAt: now.toISOString(),
             summary,
-            trend: createTrend(now, range, tokenEvents),
+            trend: createTrend(now, range, timeZone, tokenEvents),
             conversations: conversationList,
         };
     }

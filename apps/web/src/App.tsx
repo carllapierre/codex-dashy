@@ -22,13 +22,10 @@ const currencyFormatter = new Intl.NumberFormat('en-US', {
     currency: 'USD',
     maximumFractionDigits: 4,
 });
+const localTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
 function formatCurrency(value: number): string {
     return currencyFormatter.format(value);
-}
-
-function formatDuration(value: number | null): string {
-    return value === null ? '—' : `${Math.round(value)} ms`;
 }
 
 function formatMilliseconds(value: number): string {
@@ -75,39 +72,43 @@ function ConversationDetail({
                 <span className="detail-label">Initial prompt</span>
                 <p>{conversation.initialPrompt ?? 'Prompt unavailable'}</p>
             </div>
-            <div className="conversation-detail__metrics">
+            <section
+                className="stats-grid conversation-detail__stats"
+                aria-label="Conversation summary"
+            >
+                <StatCard label="Total tokens" value={conversation.totalTokens} icon="✦" />
+                <StatCard
+                    label="Estimated cost"
+                    value={conversation.estimatedCostUsd}
+                    icon="$"
+                    format={formatCurrency}
+                />
+                <StatCard
+                    label="Average TTFT"
+                    value={conversation.averageTtftMs}
+                    suffix="ms"
+                    icon="↗"
+                    format={formatMilliseconds}
+                />
+                <StatCard label="Responses" value={conversation.completedResponses} icon="◎" />
+            </section>
+            <section
+                className="conversation-detail__breakdown"
+                aria-label="Conversation token breakdown"
+            >
                 <div>
-                    <span className="detail-label">Total tokens</span>
-                    <strong>{conversation.totalTokens.toLocaleString('en-US')}</strong>
+                    <span className="detail-label">Input tokens</span>
+                    <strong>{conversation.inputTokens.toLocaleString('en-US')}</strong>
                 </div>
                 <div>
-                    <span className="detail-label">Input / cached</span>
-                    <strong>
-                        {conversation.inputTokens.toLocaleString('en-US')} /{' '}
-                        {conversation.cachedInputTokens.toLocaleString('en-US')}
-                    </strong>
+                    <span className="detail-label">Cached input</span>
+                    <strong>{conversation.cachedInputTokens.toLocaleString('en-US')}</strong>
                 </div>
                 <div>
                     <span className="detail-label">Output tokens</span>
                     <strong>{conversation.outputTokens.toLocaleString('en-US')}</strong>
                 </div>
-                <div>
-                    <span className="detail-label">Estimated cost</span>
-                    <strong>
-                        {conversation.estimatedCostUsd === null
-                            ? 'Unavailable'
-                            : formatCurrency(conversation.estimatedCostUsd)}
-                    </strong>
-                </div>
-                <div>
-                    <span className="detail-label">Average TTFT</span>
-                    <strong>{formatDuration(conversation.averageTtftMs)}</strong>
-                </div>
-                <div>
-                    <span className="detail-label">Responses</span>
-                    <strong>{conversation.completedResponses}</strong>
-                </div>
-            </div>
+            </section>
         </section>
     );
 }
@@ -123,7 +124,7 @@ export function App() {
     const loadOverview = useCallback(async () => {
         try {
             const response = await fetch(
-                `/api/telemetry/overview?range=${range}&model=${encodeURIComponent(model)}`,
+                `/api/telemetry/overview?range=${range}&model=${encodeURIComponent(model)}&timezone=${encodeURIComponent(localTimeZone)}`,
             );
 
             if (!response.ok) {

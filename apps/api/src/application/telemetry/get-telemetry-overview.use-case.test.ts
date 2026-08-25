@@ -19,7 +19,7 @@ function createBatch(): OtlpBatch {
                 conversationId: 'conversation-1',
                 model: 'gpt-5.6-luna',
                 attributes: {
-                    prompt: 'Generate a concise UI title. User prompt: Inspect usage',
+                    prompt: 'Inspect usage',
                     'event.name': 'codex.user_prompt',
                 },
             },
@@ -62,6 +62,43 @@ function createBatch(): OtlpBatch {
                     output_token_count: 100,
                 },
             },
+            {
+                eventName: 'codex.user_prompt',
+                observedAt: '2026-08-25T11:30:00.000Z',
+                conversationId: 'title-generation-1',
+                model: 'gpt-5.6-luna',
+                attributes: {
+                    prompt: 'Generate a concise UI title. User prompt: Inspect usage',
+                },
+            },
+            {
+                eventName: 'codex.sse_event',
+                observedAt: '2026-08-25T11:31:00.000Z',
+                conversationId: 'title-generation-1',
+                model: 'gpt-5.6-luna',
+                attributes: {
+                    input_token_count: 5_000,
+                    cached_token_count: 500,
+                    output_token_count: 50,
+                },
+            },
+            {
+                eventName: 'codex.user_prompt',
+                observedAt: '2026-08-25T03:30:00.000Z',
+                conversationId: 'previous-local-day',
+                model: 'gpt-5.6-terra',
+                attributes: { prompt: 'Late yesterday' },
+            },
+            {
+                eventName: 'codex.sse_event',
+                observedAt: '2026-08-25T03:31:00.000Z',
+                conversationId: 'previous-local-day',
+                model: 'gpt-5.6-terra',
+                attributes: {
+                    input_token_count: 5_000,
+                    output_token_count: 50,
+                },
+            },
         ],
     };
 }
@@ -93,6 +130,19 @@ describe('GetTelemetryOverviewUseCase', () => {
             model: 'gpt-5.6-luna',
             totalTokens: 1020,
         });
+        expect(overview.conversations).toHaveLength(1);
         expect(overview.trend.some((point) => point.totalTokens === 1020)).toBe(true);
+    });
+
+    it('uses the browser time zone for calendar-day filtering', () => {
+        const useCase = new GetTelemetryOverviewUseCase(
+            { list: () => [createBatch()] },
+            () => new Date('2026-08-25T12:00:00.000Z'),
+        );
+
+        const overview = useCase.execute('1d', null, 'America/Toronto');
+
+        expect(overview.conversations.some(({ id }) => id === 'previous-local-day')).toBe(false);
+        expect(overview.summary.totalTokens).toBe(1020);
     });
 });

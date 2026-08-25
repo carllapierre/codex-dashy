@@ -91,6 +91,8 @@ describe('App', () => {
         expect(await screen.findByRole('heading', { name: 'gpt-5.6-terra' })).toBeVisible();
         expect(screen.queryByRole('heading', { name: 'Codex usage' })).not.toBeInTheDocument();
         expect(screen.getByRole('heading', { name: 'Conversation usage' })).toBeVisible();
+        expect(screen.getByRole('region', { name: 'Conversation summary' })).toBeVisible();
+        expect(screen.getByRole('region', { name: 'Conversation token breakdown' })).toBeVisible();
 
         fireEvent.click(screen.getByRole('button', { name: 'Overview' }));
         expect(screen.getByRole('heading', { name: 'Codex usage' })).toBeVisible();

@@ -3,13 +3,16 @@ import fastifyCors from '@fastify/cors';
 import fastifyStatic from '@fastify/static';
 import Fastify, { type FastifyInstance } from 'fastify';
 import { GetHealthUseCase } from './application/health/get-health.use-case';
+import { GetTelemetryOverviewUseCase } from './application/telemetry/get-telemetry-overview.use-case';
 import { IngestOtelLogsUseCase } from './application/telemetry/ingest-otel-logs.use-case';
 import { loadConfig, type AppConfig } from './infrastructure/config/env';
 import { SqliteDatabase } from './infrastructure/persistence/sqlite/sqlite-database';
 import { HealthController } from './interface/http/controllers/health.controller';
 import { OtelLogsController } from './interface/http/controllers/otel-logs.controller';
+import { TelemetryOverviewController } from './interface/http/controllers/telemetry-overview.controller';
 import { registerHealthRoutes } from './interface/http/routes/health.routes';
 import { registerOtelRoutes } from './interface/http/routes/otel.routes';
+import { registerTelemetryRoutes } from './interface/http/routes/telemetry.routes';
 import { otlpJsonDecoder } from './infrastructure/telemetry/otlp-json.decoder';
 
 export type AppDependencies = {
@@ -32,6 +35,9 @@ export async function createApp(dependencies: AppDependencies = {}): Promise<Fas
 
     const ingestOtelLogs = new IngestOtelLogsUseCase(otlpJsonDecoder, database);
     await registerOtelRoutes(app, new OtelLogsController(ingestOtelLogs));
+
+    const getTelemetryOverview = new GetTelemetryOverviewUseCase(database);
+    await registerTelemetryRoutes(app, new TelemetryOverviewController(getTelemetryOverview));
 
     if (fs.existsSync(config.webDistDirectory)) {
         await app.register(fastifyStatic, {

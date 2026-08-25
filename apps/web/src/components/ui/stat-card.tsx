@@ -3,12 +3,13 @@ import { AnimatedNumber } from './animated-number';
 
 type StatCardProps = {
     label: string;
-    value: number;
+    value: number | null;
     suffix?: string;
     icon: ReactNode;
+    format?: (value: number) => string;
 };
 
-export function StatCard({ label, value, suffix, icon }: StatCardProps) {
+export function StatCard({ label, value, suffix, icon, format }: StatCardProps) {
     return (
         <article className="stat-card">
             <div className="stat-card__topline">
@@ -16,8 +17,10 @@ export function StatCard({ label, value, suffix, icon }: StatCardProps) {
                 <span className="stat-card__icon">{icon}</span>
             </div>
             <div className="stat-card__value">
-                <AnimatedNumber value={value} />
-                {suffix ? <span className="stat-card__suffix">{suffix}</span> : null}
+                {value === null ? <span>—</span> : <AnimatedNumber value={value} format={format} />}
+                {suffix && value !== null ? (
+                    <span className="stat-card__suffix">{suffix}</span>
+                ) : null}
             </div>
         </article>
     );

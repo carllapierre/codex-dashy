@@ -113,6 +113,17 @@ button {
         color var(--motion-duration-fast) var(--motion-ease-standard);
 }
 
+.nav-item__icon {
+    fill: none;
+    flex: 0 0 16px;
+    height: 16px;
+    stroke: currentColor;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-width: 1.5;
+    width: 16px;
+}
+
 .nav-item--active {
     background: var(--color-accent-soft);
     color: var(--color-violet-1);
@@ -413,6 +424,13 @@ h2 {
 
 .section-heading {
     justify-content: space-between;
+}
+
+.conversation-detail__metadata {
+    display: grid;
+    gap: var(--space-2);
+    justify-items: end;
+    text-align: right;
 }
 
 .muted-label {
@@ -789,6 +807,143 @@ h2 {
     max-width: 480px;
 }
 
+.model-rates-page {
+    background: var(--color-panel-background);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-card);
+    padding: var(--space-8);
+}
+
+.model-rates-page__header,
+.model-rates-page__actions {
+    align-items: flex-start;
+    display: flex;
+    justify-content: space-between;
+}
+
+.model-rates-page__header h2 {
+    margin-top: var(--space-2);
+}
+
+.model-rates-page__description {
+    color: var(--color-text-secondary);
+    font-size: var(--font-size-sm);
+    line-height: 1.5;
+    margin: var(--space-4) 0 0;
+}
+
+.model-rates-message {
+    color: var(--color-text-muted);
+    font-size: var(--font-size-sm);
+    margin: var(--space-7) 0 0;
+}
+
+.model-rates-message--error {
+    color: var(--color-violet-2);
+}
+
+.model-rates-table {
+    display: grid;
+    margin-top: var(--space-7);
+    min-width: 680px;
+}
+
+.model-rates-table__row {
+    align-items: center;
+    border-top: 1px solid var(--color-border-subtle);
+    display: grid;
+    gap: var(--space-4);
+    grid-template-columns: minmax(145px, 1.25fr) repeat(3, minmax(120px, 1fr));
+    padding: var(--space-4) 0;
+}
+
+.model-rates-table__row--header {
+    border-top: 0;
+    color: var(--color-text-muted);
+    font-size: var(--font-size-xs);
+    letter-spacing: var(--tracking-label);
+    text-transform: uppercase;
+}
+
+.model-rates-table__row strong {
+    color: var(--color-text-primary);
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-semibold);
+}
+
+.model-rates-table input {
+    background: var(--color-control-background);
+    border: 1px solid var(--color-border-subtle);
+    border-radius: var(--radius-sm);
+    color: var(--color-text-primary);
+    min-height: 34px;
+    padding: 0 var(--space-3);
+    width: 100%;
+}
+
+.model-rates-table input:focus {
+    border-color: var(--color-border-accent);
+    outline: 2px solid var(--color-accent-soft);
+    outline-offset: 1px;
+}
+
+.model-rates-page__actions {
+    align-items: center;
+    border-top: 1px solid var(--color-border-subtle);
+    gap: var(--space-3);
+    justify-content: flex-end;
+    margin-top: var(--space-6);
+    padding-top: var(--space-6);
+}
+
+.button {
+    border: 1px solid transparent;
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-semibold);
+    padding: var(--space-3) var(--space-5);
+}
+
+.button:disabled {
+    cursor: not-allowed;
+    opacity: 0.55;
+}
+
+.button--quiet {
+    background: transparent;
+    border-color: var(--color-border-subtle);
+    color: var(--color-text-secondary);
+}
+
+.button--quiet:hover:not(:disabled) {
+    background: var(--color-accent-hover);
+    color: var(--color-text-primary);
+}
+
+.button--accent {
+    background: var(--color-violet-4);
+    color: var(--color-violet-1);
+}
+
+.button--accent:hover:not(:disabled) {
+    background: var(--color-violet-3);
+    color: var(--color-night-0);
+}
+
+.sr-only {
+    border: 0;
+    clip: rect(0, 0, 0, 0);
+    height: 1px;
+    margin: -1px;
+    overflow: hidden;
+    padding: 0;
+    position: absolute;
+    white-space: nowrap;
+    width: 1px;
+}
+
 @media (max-width: 840px) {
     .sidebar {
         flex-basis: 244px;
@@ -854,6 +1009,10 @@ h2 {
 
     .range-tabs button {
         flex: 1;
+    }
+
+    .model-rates-page {
+        padding: var(--space-6);
     }
 
     .conversation-detail__stats,

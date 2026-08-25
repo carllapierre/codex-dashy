@@ -35,6 +35,7 @@ const overview: TelemetryOverview = {
             startedAt: '2026-08-25T11:00:00.000Z',
             lastActivityAt: '2026-08-25T11:01:00.000Z',
             model: 'gpt-5.6-luna',
+            reasoningEfforts: [],
             inputTokens: 1_000,
             cachedInputTokens: 100,
             outputTokens: 20,
@@ -51,6 +52,7 @@ const overview: TelemetryOverview = {
             startedAt: '2026-08-25T10:00:00.000Z',
             lastActivityAt: '2026-08-25T10:30:00.000Z',
             model: 'gpt-5.6-terra',
+            reasoningEfforts: [],
             inputTokens: 2_000,
             cachedInputTokens: 0,
             outputTokens: 30,
@@ -113,5 +115,9 @@ describe('App', () => {
             'href',
             'https://example.com/usage',
         );
+
+        fireEvent.click(screen.getByRole('button', { name: 'Model rates' }));
+        expect(screen.getByRole('heading', { name: 'Model rates', level: 1 })).toBeVisible();
+        expect(screen.queryByRole('group', { name: 'Time window' })).not.toBeInTheDocument();
     });
 });

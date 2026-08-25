@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { EmptyChart } from './components/empty-chart';
+import { ModelRatesPage } from './components/model-rates-page';
 import { Sidebar } from './components/sidebar';
 import { UsageChart } from './components/usage-chart';
 import { StatCard } from './components/ui/stat-card';
@@ -16,7 +17,7 @@ const rangeOptions: Array<{ value: TelemetryRange; label: string }> = [
     { value: '30d', label: '1 month' },
 ];
 
-type DashboardView = 'overview' | 'conversation';
+type DashboardView = 'overview' | 'conversation' | 'settings';
 
 const currencyFormatter = new Intl.NumberFormat('en-US', {
     style: 'currency',
@@ -75,9 +76,17 @@ function ConversationDetail({
                     <p className="eyebrow">Conversation detail</p>
                     <h2>{conversation.model ?? 'Model unavailable'}</h2>
                 </div>
-                <span className="muted-label">
-                    {getRangeLabel(range)} · {model === 'all' ? 'All models' : model}
-                </span>
+                <div className="conversation-detail__metadata">
+                    <span className="muted-label">
+                        {getRangeLabel(range)} · {model === 'all' ? 'All models' : model}
+                    </span>
+                    <span className="muted-label">
+                        Reasoning:{' '}
+                        {conversation.reasoningEfforts.length > 0
+                            ? conversation.reasoningEfforts.join(', ')
+                            : 'Unavailable'}
+                    </span>
+                </div>
             </div>
             <div
                 className={`conversation-detail__prompt ${
@@ -197,6 +206,7 @@ export function App() {
         setActiveView('conversation');
     }, []);
     const isOverview = activeView === 'overview';
+    const isSettings = activeView === 'settings';
 
     return (
         <div className="app-shell">
@@ -206,54 +216,67 @@ export function App() {
                 selectedConversationId={selectedConversationId}
                 onSelectOverview={() => setActiveView('overview')}
                 onSelectConversation={selectConversation}
+                onSelectSettings={() => setActiveView('settings')}
             />
             <main className="main-content">
                 <header className="page-header">
                     <div>
-                        <h1>{isOverview ? 'Codex usage' : 'Conversation usage'}</h1>
+                        <h1>
+                            {isOverview
+                                ? 'Codex usage'
+                                : isSettings
+                                  ? 'Model rates'
+                                  : 'Conversation usage'}
+                        </h1>
                         <p className="page-header__description">
                             {isOverview
                                 ? 'A global view of your Codex activity on this machine.'
-                                : 'Inspect token usage for the selected conversation.'}
+                                : isSettings
+                                  ? 'Configure the estimates used to calculate token spend.'
+                                  : 'Inspect token usage for the selected conversation.'}
                         </p>
                     </div>
                 </header>
 
-                <section
-                    className="filter-bar"
-                    aria-label={`${isOverview ? 'Overview' : 'Conversation'} filters`}
-                >
-                    <div className="filter-group">
-                        <span className="detail-label">Time window</span>
-                        <div className="range-tabs" role="group" aria-label="Time window">
-                            {rangeOptions.map((option) => (
-                                <button
-                                    className={range === option.value ? 'range-tab--active' : ''}
-                                    key={option.value}
-                                    type="button"
-                                    onClick={() => setRange(option.value)}
-                                >
-                                    {option.label}
-                                </button>
-                            ))}
+                {!isSettings ? (
+                    <section
+                        className="filter-bar"
+                        aria-label={`${isOverview ? 'Overview' : 'Conversation'} filters`}
+                    >
+                        <div className="filter-group">
+                            <span className="detail-label">Time window</span>
+                            <div className="range-tabs" role="group" aria-label="Time window">
+                                {rangeOptions.map((option) => (
+                                    <button
+                                        className={
+                                            range === option.value ? 'range-tab--active' : ''
+                                        }
+                                        key={option.value}
+                                        type="button"
+                                        onClick={() => setRange(option.value)}
+                                    >
+                                        {option.label}
+                                    </button>
+                                ))}
+                            </div>
                         </div>
-                    </div>
-                    <label className="filter-group filter-group--model">
-                        <span className="detail-label">Model</span>
-                        <select
-                            className="filter-select"
-                            value={model}
-                            onChange={(event) => setModel(event.target.value)}
-                        >
-                            <option value="all">All models</option>
-                            {availableModels.map((availableModel) => (
-                                <option key={availableModel} value={availableModel}>
-                                    {availableModel}
-                                </option>
-                            ))}
-                        </select>
-                    </label>
-                </section>
+                        <label className="filter-group filter-group--model">
+                            <span className="detail-label">Model</span>
+                            <select
+                                className="filter-select"
+                                value={model}
+                                onChange={(event) => setModel(event.target.value)}
+                            >
+                                <option value="all">All models</option>
+                                {availableModels.map((availableModel) => (
+                                    <option key={availableModel} value={availableModel}>
+                                        {availableModel}
+                                    </option>
+                                ))}
+                            </select>
+                        </label>
+                    </section>
+                ) : null}
 
                 {isOverview ? (
                     <>
@@ -298,6 +321,8 @@ export function App() {
                             {overview ? <UsageChart points={overview.trend} /> : <EmptyChart />}
                         </section>
                     </>
+                ) : isSettings ? (
+                    <ModelRatesPage onSaved={() => setActiveView('overview')} />
                 ) : (
                     <ConversationDetail
                         conversation={selectedConversation}

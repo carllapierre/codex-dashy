@@ -3,10 +3,11 @@ import { formatCompactNumber } from './ui/animated-number';
 
 type SidebarProps = {
     conversations: TelemetryConversation[];
-    activeView: 'overview' | 'conversation';
+    activeView: 'overview' | 'conversation' | 'settings';
     selectedConversationId: string | null;
     onSelectOverview: () => void;
     onSelectConversation: (conversationId: string) => void;
+    onSelectSettings: () => void;
 };
 
 function formatRelativeDate(value: string): string {
@@ -26,6 +27,7 @@ export function Sidebar({
     selectedConversationId,
     onSelectOverview,
     onSelectConversation,
+    onSelectSettings,
 }: SidebarProps) {
     return (
         <aside className="sidebar">
@@ -61,7 +63,9 @@ export function Sidebar({
                     type="button"
                     onClick={onSelectOverview}
                 >
-                    <span aria-hidden="true">◈</span>
+                    <svg className="nav-item__icon" viewBox="0 0 20 20" aria-hidden="true">
+                        <path d="m10 2.5 7.5 7.5-7.5 7.5L2.5 10 10 2.5Z" />
+                    </svg>
                     Overview
                 </button>
                 <button
@@ -70,9 +74,23 @@ export function Sidebar({
                     onClick={() => onSelectConversation(conversations[0]?.id ?? '')}
                     disabled={conversations.length === 0}
                 >
-                    <span aria-hidden="true">▦</span>
+                    <svg className="nav-item__icon" viewBox="0 0 20 20" aria-hidden="true">
+                        <rect x="3.5" y="3.5" width="13" height="13" rx="1.5" />
+                        <path d="M3.5 8.5h13M8.5 3.5v13" />
+                    </svg>
                     Conversations
                     <span className="nav-item__count">{conversations.length}</span>
+                </button>
+                <button
+                    className={`nav-item ${activeView === 'settings' ? 'nav-item--active' : ''}`}
+                    type="button"
+                    onClick={onSelectSettings}
+                >
+                    <svg className="nav-item__icon" viewBox="0 0 20 20" aria-hidden="true">
+                        <circle cx="10" cy="10" r="2.5" />
+                        <path d="M10 2.75v2M10 15.25v2M2.75 10h2M15.25 10h2M4.87 4.87l1.42 1.42M13.71 13.71l1.42 1.42M15.13 4.87l-1.42 1.42M6.29 13.71l-1.42 1.42" />
+                    </svg>
+                    Model rates
                 </button>
             </nav>
 

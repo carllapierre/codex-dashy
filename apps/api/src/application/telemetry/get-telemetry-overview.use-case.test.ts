@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { DEFAULT_MODEL_RATES } from '../../infrastructure/telemetry/model-rate-defaults';
 import type { OtlpBatch } from '../../domain/telemetry/otel-batch';
 import { GetTelemetryOverviewUseCase } from './get-telemetry-overview.use-case';
 
@@ -35,6 +36,7 @@ function createBatch(): OtlpBatch {
                     output_token_count: 20,
                     reasoning_token_count: 3,
                     tool_token_count: 1_020,
+                    model_reasoning_effort: 'high',
                 },
             },
             {
@@ -103,10 +105,20 @@ function createBatch(): OtlpBatch {
     };
 }
 
+const modelRates = {
+    listModelRates: () =>
+        Object.entries(DEFAULT_MODEL_RATES).map(([model, rate]) => ({
+            model,
+            ...rate,
+            updatedAt: '2026-08-25T12:00:00.000Z',
+        })),
+};
+
 describe('GetTelemetryOverviewUseCase', () => {
     it('filters by time and model, aggregates conversations, and estimates cost', () => {
         const useCase = new GetTelemetryOverviewUseCase(
             { list: () => [createBatch()] },
+            modelRates,
             () => new Date('2026-08-25T12:00:00.000Z'),
         );
 
@@ -128,6 +140,7 @@ describe('GetTelemetryOverviewUseCase', () => {
             id: 'conversation-1',
             initialPrompt: 'Inspect usage',
             model: 'gpt-5.6-luna',
+            reasoningEfforts: ['high'],
             totalTokens: 1020,
         });
         expect(overview.conversations).toHaveLength(1);
@@ -137,6 +150,7 @@ describe('GetTelemetryOverviewUseCase', () => {
     it('uses the browser time zone for calendar-day filtering', () => {
         const useCase = new GetTelemetryOverviewUseCase(
             { list: () => [createBatch()] },
+            modelRates,
             () => new Date('2026-08-25T12:00:00.000Z'),
         );
 
@@ -144,5 +158,30 @@ describe('GetTelemetryOverviewUseCase', () => {
 
         expect(overview.conversations.some(({ id }) => id === 'previous-local-day')).toBe(false);
         expect(overview.summary.totalTokens).toBe(1020);
+    });
+
+    it('uses the persisted rate values when estimating cost', () => {
+        const editedRates = {
+            listModelRates: () =>
+                modelRates.listModelRates().map((rate) =>
+                    rate.model === 'gpt-5.6-luna'
+                        ? {
+                              ...rate,
+                              inputPerMillionUsd: 0.3,
+                              cachedInputPerMillionUsd: 0.03,
+                              outputPerMillionUsd: 1.5,
+                          }
+                        : rate,
+                ),
+        };
+        const useCase = new GetTelemetryOverviewUseCase(
+            { list: () => [createBatch()] },
+            editedRates,
+            () => new Date('2026-08-25T12:00:00.000Z'),
+        );
+
+        const overview = useCase.execute('1d', 'gpt-5.6-luna');
+
+        expect(overview.summary.estimatedCostUsd).toBeCloseTo(0.000303, 8);
     });
 });

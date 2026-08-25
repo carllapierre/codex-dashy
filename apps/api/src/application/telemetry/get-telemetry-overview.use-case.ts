@@ -3,6 +3,7 @@ import type {
     OtlpBatchQueryRepository,
     TelemetryAttribute,
 } from '../../domain/telemetry/otel-batch';
+import type { ModelRate, ModelRateQueryRepository } from '../../domain/settings/model-rate';
 import {
     type TelemetryConversation,
     type TelemetryOverview,
@@ -24,6 +25,7 @@ type UsageAccumulator = {
     startedAt: number;
     lastActivityAt: number;
     model: string | null;
+    reasoningEfforts: string[];
     inputTokens: number;
     cachedInputTokens: number;
     outputTokens: number;
@@ -35,7 +37,10 @@ type UsageAccumulator = {
     hasUnknownRate: boolean;
 };
 
-type UsageTotals = Omit<UsageAccumulator, 'id' | 'initialPrompt' | 'startedAt' | 'lastActivityAt'>;
+type UsageTotals = Omit<
+    UsageAccumulator,
+    'id' | 'initialPrompt' | 'startedAt' | 'lastActivityAt' | 'reasoningEfforts'
+>;
 
 function readNumber(attributes: Record<string, TelemetryAttribute>, key: string): number {
     const value = attributes[key];
@@ -85,6 +90,7 @@ function createAccumulator(id: string, timestamp: number): UsageAccumulator {
         startedAt: timestamp,
         lastActivityAt: timestamp,
         model: null,
+        reasoningEfforts: [],
         inputTokens: 0,
         cachedInputTokens: 0,
         outputTokens: 0,
@@ -116,6 +122,7 @@ function addTokenUsage(
     totals: UsageTotals,
     model: string | null,
     attributes: Record<string, TelemetryAttribute>,
+    rates: ReadonlyMap<string, ModelRate>,
 ): void {
     const inputTokens = readNumber(attributes, 'input_token_count');
     const cachedInputTokens = readNumber(attributes, 'cached_token_count');
@@ -131,7 +138,8 @@ function addTokenUsage(
     totals.toolTokens += toolTokens;
     totals.completedResponses += 1;
 
-    const cost = calculateEstimatedCostUsd(model, inputTokens, cachedInputTokens, outputTokens);
+    const rate = model ? (rates.get(model.toLowerCase()) ?? null) : null;
+    const cost = calculateEstimatedCostUsd(rate, inputTokens, cachedInputTokens, outputTokens);
     if (cost === null && inputTokens + outputTokens > 0) {
         totals.hasUnknownRate = true;
     } else if (cost !== null) {
@@ -175,6 +183,7 @@ function toConversation(accumulator: UsageAccumulator): TelemetryConversation {
         startedAt: new Date(accumulator.startedAt).toISOString(),
         lastActivityAt: new Date(accumulator.lastActivityAt).toISOString(),
         model: accumulator.model,
+        reasoningEfforts: accumulator.reasoningEfforts,
         inputTokens: accumulator.inputTokens,
         cachedInputTokens: accumulator.cachedInputTokens,
         outputTokens: accumulator.outputTokens,
@@ -271,6 +280,7 @@ function createTrend(
     now: Date,
     range: TelemetryRange,
     timeZone: string,
+    rates: ReadonlyMap<string, ModelRate>,
     events: Array<{
         timestamp: number;
         model: string | null;
@@ -290,7 +300,7 @@ function createTrend(
         const bucket = buckets[index];
 
         if (bucket) {
-            addTokenUsage(bucket.totals, event.model, event.attributes);
+            addTokenUsage(bucket.totals, event.model, event.attributes, rates);
         }
     }
 
@@ -325,6 +335,7 @@ function getStoredEvents(batches: OtlpBatch[], cutoff: number) {
 export class GetTelemetryOverviewUseCase {
     public constructor(
         private readonly repository: OtlpBatchQueryRepository,
+        private readonly modelRateRepository: ModelRateQueryRepository,
         private readonly now: () => Date = () => new Date(),
     ) {}
 
@@ -335,6 +346,11 @@ export class GetTelemetryOverviewUseCase {
     ): TelemetryOverview {
         const now = this.now();
         const cutoff = rangeStart(now, range, timeZone).getTime();
+        const rates = new Map(
+            this.modelRateRepository
+                .listModelRates()
+                .map((rate) => [rate.model.toLowerCase(), rate] as const),
+        );
         const storedEvents = getStoredEvents(this.repository.list(), Number.NEGATIVE_INFINITY);
         const internalConversationIds = new Set(
             storedEvents
@@ -369,14 +385,14 @@ export class GetTelemetryOverviewUseCase {
             const attributes = event.attributes;
 
             if (event.eventName === 'codex.sse_event' && 'input_token_count' in attributes) {
-                addTokenUsage(totals, event.model, attributes);
+                addTokenUsage(totals, event.model, attributes, rates);
                 tokenEvents.push({ timestamp: event.timestamp, model: event.model, attributes });
 
                 if (conversationId) {
                     const accumulator =
                         conversations.get(conversationId) ??
                         createAccumulator(conversationId, event.timestamp);
-                    addTokenUsage(accumulator, event.model, attributes);
+                    addTokenUsage(accumulator, event.model, attributes, rates);
                     conversations.set(conversationId, accumulator);
                 }
             }
@@ -388,6 +404,17 @@ export class GetTelemetryOverviewUseCase {
                 accumulator.startedAt = Math.min(accumulator.startedAt, event.timestamp);
                 accumulator.lastActivityAt = Math.max(accumulator.lastActivityAt, event.timestamp);
                 accumulator.model ??= event.model;
+
+                for (const key of ['model_reasoning_effort', 'reasoning_effort']) {
+                    const reasoningEffort = readString(attributes, key);
+
+                    if (
+                        reasoningEffort &&
+                        !accumulator.reasoningEfforts.includes(reasoningEffort)
+                    ) {
+                        accumulator.reasoningEfforts.push(reasoningEffort);
+                    }
+                }
 
                 if (event.eventName === 'codex.user_prompt') {
                     accumulator.initialPrompt ??= readUserPrompt(attributes);
@@ -427,7 +454,7 @@ export class GetTelemetryOverviewUseCase {
             availableModels,
             generatedAt: now.toISOString(),
             summary,
-            trend: createTrend(now, range, timeZone, tokenEvents),
+            trend: createTrend(now, range, timeZone, rates, tokenEvents),
             conversations: conversationList,
         };
     }

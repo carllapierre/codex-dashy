@@ -2,13 +2,20 @@ import fs from 'node:fs';
 import path from 'node:path';
 import Database from 'better-sqlite3';
 import type {
+    ModelRate,
+    ModelRateRepository,
+    ModelRateValues,
+} from '../../../domain/settings/model-rate';
+import type {
     OtlpBatch,
     OtlpBatchQueryRepository,
     OtlpBatchRepository,
 } from '../../../domain/telemetry/otel-batch';
 import { runMigrations } from './migrations';
 
-export class SqliteDatabase implements OtlpBatchRepository, OtlpBatchQueryRepository {
+export class SqliteDatabase
+    implements OtlpBatchRepository, OtlpBatchQueryRepository, ModelRateRepository
+{
     private readonly database: Database.Database;
 
     public constructor(filename: string) {
@@ -102,6 +109,70 @@ export class SqliteDatabase implements OtlpBatchRepository, OtlpBatchQueryReposi
             events: JSON.parse(row.events) as OtlpBatch['events'],
             sanitizedPayload: JSON.parse(row.sanitizedPayload) as unknown,
         }));
+    }
+
+    public listModelRates(): ModelRate[] {
+        const rows = this.database
+            .prepare(
+                `SELECT
+                    model,
+                    input_per_million_usd AS inputPerMillionUsd,
+                    cached_input_per_million_usd AS cachedInputPerMillionUsd,
+                    output_per_million_usd AS outputPerMillionUsd,
+                    updated_at AS updatedAt
+                FROM model_rates
+                ORDER BY model ASC`,
+            )
+            .all() as ModelRate[];
+
+        return rows;
+    }
+
+    public updateModelRate(model: string, values: ModelRateValues): ModelRate {
+        const normalizedModel = model.trim().toLowerCase();
+        const updatedAt = new Date().toISOString();
+
+        this.database
+            .prepare(
+                `INSERT INTO model_rates (
+                    model,
+                    input_per_million_usd,
+                    cached_input_per_million_usd,
+                    output_per_million_usd,
+                    updated_at
+                ) VALUES (?, ?, ?, ?, ?)
+                ON CONFLICT(model) DO UPDATE SET
+                    input_per_million_usd = excluded.input_per_million_usd,
+                    cached_input_per_million_usd = excluded.cached_input_per_million_usd,
+                    output_per_million_usd = excluded.output_per_million_usd,
+                    updated_at = excluded.updated_at`,
+            )
+            .run(
+                normalizedModel,
+                values.inputPerMillionUsd,
+                values.cachedInputPerMillionUsd,
+                values.outputPerMillionUsd,
+                updatedAt,
+            );
+
+        const rate = this.database
+            .prepare(
+                `SELECT
+                    model,
+                    input_per_million_usd AS inputPerMillionUsd,
+                    cached_input_per_million_usd AS cachedInputPerMillionUsd,
+                    output_per_million_usd AS outputPerMillionUsd,
+                    updated_at AS updatedAt
+                FROM model_rates
+                WHERE model = ?`,
+            )
+            .get(normalizedModel) as ModelRate | undefined;
+
+        if (!rate) {
+            throw new Error(`Unable to read updated model rate for ${normalizedModel}`);
+        }
+
+        return rate;
     }
 
     public close(): void {

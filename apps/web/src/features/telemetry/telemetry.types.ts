@@ -1,11 +1,20 @@
 export type TelemetryRange = '1d' | '7d' | '30d';
 
+export type ModelRate = {
+    model: string;
+    inputPerMillionUsd: number;
+    cachedInputPerMillionUsd: number;
+    outputPerMillionUsd: number;
+    updatedAt: string;
+};
+
 export type TelemetryConversation = {
     id: string;
     initialPrompt: string | null;
     startedAt: string;
     lastActivityAt: string;
     model: string | null;
+    reasoningEfforts: string[];
     inputTokens: number;
     cachedInputTokens: number;
     outputTokens: number;

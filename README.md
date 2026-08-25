@@ -52,6 +52,8 @@ Restart Codex after changing the configuration. The dashboard uses the captured 
 
 The overview supports 1-day, 1-week, and 1-month calendar windows based on the browser's local time zone, plus filtering by observed model. Internal Codex title-generation sessions are excluded from conversation counts and usage totals so they do not appear as duplicate user conversations. The conversation list updates every five seconds while the API is available. Estimated cost is based on the configured model rate table and should be treated as an estimate rather than subscription billing.
 
+Model rates are stored in SQLite and seeded from the current defaults on first run. Use **Model rates** in the dashboard sidebar to edit input, cached-input, and output prices in USD per million tokens. Existing edits are preserved across restarts; updating a rate recalculates displayed estimates without changing stored telemetry.
+
 ## Quality checks
 
 ```bash

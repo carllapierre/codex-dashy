@@ -6,6 +6,7 @@ export type TelemetryConversation = {
     startedAt: string;
     lastActivityAt: string;
     model: string | null;
+    reasoningEfforts: string[];
     inputTokens: number;
     cachedInputTokens: number;
     outputTokens: number;

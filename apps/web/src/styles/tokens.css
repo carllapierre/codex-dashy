@@ -32,6 +32,9 @@
     --color-success: var(--color-teal-1);
     --color-border: rgba(148, 163, 184, 0.13);
     --color-border-subtle: rgba(148, 163, 184, 0.11);
+    --color-scrollbar-track: rgba(8, 11, 22, 0.68);
+    --color-scrollbar-thumb: rgba(164, 156, 255, 0.48);
+    --color-scrollbar-thumb-hover: rgba(164, 156, 255, 0.72);
 
     /* Typography */
     --font-family-sans:

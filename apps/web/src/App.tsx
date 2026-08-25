@@ -45,6 +45,12 @@ function ConversationDetail({
     range: TelemetryRange;
     model: string;
 }) {
+    const [promptExpanded, setPromptExpanded] = useState(false);
+
+    useEffect(() => {
+        setPromptExpanded(false);
+    }, [conversation?.id]);
+
     if (!conversation) {
         return (
             <section className="content-card empty-state">
@@ -57,6 +63,10 @@ function ConversationDetail({
         );
     }
 
+    const prompt = conversation.initialPrompt ?? 'Prompt unavailable';
+    const canExpandPrompt = prompt.length > 320;
+    const promptId = `conversation-prompt-${conversation.id}`;
+
     return (
         <section className="content-card conversation-detail" aria-label="Conversation details">
             <div className="section-heading">
@@ -68,9 +78,25 @@ function ConversationDetail({
                     {getRangeLabel(range)} · {model === 'all' ? 'All models' : model}
                 </span>
             </div>
-            <div className="conversation-detail__prompt">
+            <div
+                className={`conversation-detail__prompt ${
+                    promptExpanded ? 'conversation-detail__prompt--expanded' : ''
+                }`}
+            >
                 <span className="detail-label">Initial prompt</span>
-                <p>{conversation.initialPrompt ?? 'Prompt unavailable'}</p>
+                <p id={promptId}>{prompt}</p>
+                {canExpandPrompt ? (
+                    <button
+                        className="conversation-detail__prompt-toggle"
+                        type="button"
+                        aria-controls={promptId}
+                        aria-expanded={promptExpanded}
+                        onClick={() => setPromptExpanded((expanded) => !expanded)}
+                    >
+                        {promptExpanded ? 'Collapse prompt' : 'Show full prompt'}
+                        <span aria-hidden="true">{promptExpanded ? '↑' : '↓'}</span>
+                    </button>
+                ) : null}
             </div>
             <section
                 className="stats-grid conversation-detail__stats"

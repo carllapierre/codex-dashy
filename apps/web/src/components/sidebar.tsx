@@ -32,7 +32,15 @@ export function Sidebar({
     return (
         <aside className="sidebar">
             <div className="brand">
-                <div className="brand__mark">C</div>
+                <div className="brand__mark" aria-hidden="true">
+                    <svg className="brand__icon" viewBox="0 0 48 48" role="presentation">
+                        <path
+                            d="m24 4 3.9 14.1L42 22l-14.1 3.9L24 40l-3.9-14.1L6 22l14.1-3.9L24 4Z"
+                            fill="currentColor"
+                        />
+                        <circle cx="38" cy="10" fill="var(--color-teal-1)" r="4" />
+                    </svg>
+                </div>
                 <div>
                     <div className="brand__name">Codex Dashy</div>
                     <div className="brand__caption">local telemetry</div>

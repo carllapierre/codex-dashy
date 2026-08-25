@@ -29,7 +29,7 @@ button {
     background: rgba(9, 13, 27, 0.78);
     border-right: 1px solid var(--color-border-subtle);
     display: flex;
-    flex: 0 0 244px;
+    flex: 0 0 292px;
     flex-direction: column;
     height: 100vh;
     overflow: hidden;
@@ -64,6 +64,11 @@ button {
     height: 34px;
     justify-content: center;
     width: 34px;
+}
+
+.brand__icon {
+    height: 25px;
+    width: 25px;
 }
 
 .brand__name {
@@ -159,6 +164,27 @@ button {
     min-height: 0;
     overflow-y: auto;
     padding-right: var(--space-2);
+    scrollbar-color: var(--color-scrollbar-thumb) var(--color-scrollbar-track);
+    scrollbar-width: thin;
+}
+
+.conversation-list::-webkit-scrollbar {
+    width: 8px;
+}
+
+.conversation-list::-webkit-scrollbar-track {
+    background: var(--color-scrollbar-track);
+    border-radius: var(--radius-pill);
+}
+
+.conversation-list::-webkit-scrollbar-thumb {
+    background: var(--color-scrollbar-thumb);
+    border: 2px solid var(--color-scrollbar-track);
+    border-radius: var(--radius-pill);
+}
+
+.conversation-list::-webkit-scrollbar-thumb:hover {
+    background: var(--color-scrollbar-thumb-hover);
 }
 
 .conversation-item {
@@ -194,7 +220,7 @@ button {
     line-height: 1.4;
     overflow: hidden;
     -webkit-box-orient: vertical;
-    -webkit-line-clamp: 2;
+    -webkit-line-clamp: 3;
 }
 
 .conversation-item__meta,
@@ -533,7 +559,37 @@ h2 {
     color: var(--color-text-secondary);
     line-height: 1.6;
     margin: var(--space-3) 0 0;
+    max-height: 8.1em;
+    overflow: hidden;
+    position: relative;
     white-space: pre-wrap;
+}
+
+.conversation-detail__prompt:not(.conversation-detail__prompt--expanded) p {
+    -webkit-mask-image: linear-gradient(to bottom, #000 78%, transparent 100%);
+    mask-image: linear-gradient(to bottom, #000 78%, transparent 100%);
+}
+
+.conversation-detail__prompt--expanded p {
+    max-height: none;
+}
+
+.conversation-detail__prompt-toggle {
+    align-items: center;
+    background: transparent;
+    border: 0;
+    color: var(--color-violet-3);
+    cursor: pointer;
+    display: inline-flex;
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-semibold);
+    gap: var(--space-2);
+    margin-top: var(--space-4);
+    padding: 0;
+}
+
+.conversation-detail__prompt-toggle:hover {
+    color: var(--color-text-primary);
 }
 
 .conversation-detail__breakdown {
@@ -592,7 +648,7 @@ h2 {
 
 @media (max-width: 840px) {
     .sidebar {
-        flex-basis: 190px;
+        flex-basis: 228px;
     }
 
     .main-content {

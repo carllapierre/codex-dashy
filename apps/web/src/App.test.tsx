@@ -47,7 +47,7 @@ const overview: TelemetryOverview = {
         },
         {
             id: 'conversation-2',
-            initialPrompt: 'Second session',
+            initialPrompt: 'Review this prompt '.repeat(24),
             startedAt: '2026-08-25T10:00:00.000Z',
             lastActivityAt: '2026-08-25T10:30:00.000Z',
             model: 'gpt-5.6-terra',
@@ -87,12 +87,16 @@ describe('App', () => {
             expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining('range=1d')),
         );
 
-        fireEvent.click(screen.getByRole('button', { name: /Second session/ }));
+        fireEvent.click(screen.getByRole('button', { name: /Review this prompt/ }));
         expect(await screen.findByRole('heading', { name: 'gpt-5.6-terra' })).toBeVisible();
         expect(screen.queryByRole('heading', { name: 'Codex usage' })).not.toBeInTheDocument();
         expect(screen.getByRole('heading', { name: 'Conversation usage' })).toBeVisible();
         expect(screen.getByRole('region', { name: 'Conversation summary' })).toBeVisible();
         expect(screen.getByRole('region', { name: 'Conversation token breakdown' })).toBeVisible();
+        expect(screen.getByRole('button', { name: 'Show full prompt' })).toBeVisible();
+
+        fireEvent.click(screen.getByRole('button', { name: 'Show full prompt' }));
+        expect(screen.getByRole('button', { name: 'Collapse prompt' })).toBeVisible();
 
         fireEvent.click(screen.getByRole('button', { name: 'Overview' }));
         expect(screen.getByRole('heading', { name: 'Codex usage' })).toBeVisible();

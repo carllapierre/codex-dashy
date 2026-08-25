@@ -31,7 +31,7 @@ const overview: TelemetryOverview = {
     conversations: [
         {
             id: 'conversation-1',
-            initialPrompt: 'Inspect usage totals',
+            initialPrompt: 'Inspect [usage totals](https://example.com/usage)',
             startedAt: '2026-08-25T11:00:00.000Z',
             lastActivityAt: '2026-08-25T11:01:00.000Z',
             model: 'gpt-5.6-luna',
@@ -79,7 +79,7 @@ describe('App', () => {
         render(<App />);
 
         expect(await screen.findByRole('heading', { name: 'Codex usage' })).toBeVisible();
-        expect(screen.getByText('Inspect usage totals')).toBeVisible();
+        expect(screen.getByText('Inspect [usage totals](https://example.com/usage)')).toBeVisible();
         expect(screen.getByRole('option', { name: 'gpt-5.6-terra' })).toBeVisible();
 
         fireEvent.click(screen.getByRole('button', { name: '1 day' }));
@@ -102,6 +102,16 @@ describe('App', () => {
         expect(screen.getByRole('heading', { name: 'Codex usage' })).toBeVisible();
         expect(screen.getByRole('button', { name: /Review this prompt/ })).not.toHaveClass(
             'conversation-item--active',
+        );
+
+        fireEvent.click(
+            screen.getByRole('button', {
+                name: /Inspect \[usage totals\]\(https:\/\/example\.com\/usage\)/,
+            }),
+        );
+        expect(await screen.findByRole('link', { name: 'usage totals' })).toHaveAttribute(
+            'href',
+            'https://example.com/usage',
         );
     });
 });

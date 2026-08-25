@@ -3,6 +3,7 @@ import { EmptyChart } from './components/empty-chart';
 import { Sidebar } from './components/sidebar';
 import { UsageChart } from './components/usage-chart';
 import { StatCard } from './components/ui/stat-card';
+import { MarkdownContent } from './components/ui/markdown-content';
 import type {
     TelemetryConversation,
     TelemetryOverview,
@@ -84,7 +85,7 @@ function ConversationDetail({
                 }`}
             >
                 <span className="detail-label">Initial prompt</span>
-                <p id={promptId}>{prompt}</p>
+                <MarkdownContent content={prompt} id={promptId} />
                 {canExpandPrompt ? (
                     <button
                         className="conversation-detail__prompt-toggle"

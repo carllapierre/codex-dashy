@@ -2,20 +2,20 @@
     color-scheme: dark;
 
     /* Primitive palette */
-    --color-ink-0: #f5f7ff;
-    --color-ink-1: #eef2ff;
-    --color-ink-2: #a6b4ce;
-    --color-ink-3: #8d98b4;
-    --color-ink-4: #7f8aa8;
-    --color-ink-5: #64708e;
-    --color-night-0: #080b16;
-    --color-night-1: #090d1b;
-    --color-night-2: #0f1325;
-    --color-night-3: #191f37;
-    --color-violet-1: #e9e7ff;
-    --color-violet-2: #c4c0ff;
-    --color-violet-3: #a49cff;
-    --color-violet-4: #8b7cff;
+    --color-ink-0: #f7f3ff;
+    --color-ink-1: #eee8ff;
+    --color-ink-2: #c3b8df;
+    --color-ink-3: #a79abb;
+    --color-ink-4: #8b7fa7;
+    --color-ink-5: #685d84;
+    --color-night-0: #080c23;
+    --color-night-1: #0d1030;
+    --color-night-2: #151035;
+    --color-night-3: #251546;
+    --color-violet-1: #f1eaff;
+    --color-violet-2: #d9c8ff;
+    --color-violet-3: #ba98ff;
+    --color-violet-4: #8b63d8;
     --color-teal-1: #5be0c3;
     --color-teal-2: #59d7d0;
 
@@ -27,14 +27,27 @@
     --color-text-secondary: var(--color-ink-3);
     --color-text-muted: var(--color-ink-4);
     --color-text-subtle: var(--color-ink-5);
-    --color-accent: var(--color-violet-4);
-    --color-accent-soft: rgba(124, 113, 255, 0.14);
+    --color-accent: var(--color-violet-3);
+    --color-accent-soft: rgba(186, 152, 255, 0.14);
+    --color-accent-hover: rgba(186, 152, 255, 0.08);
     --color-success: var(--color-teal-1);
-    --color-border: rgba(148, 163, 184, 0.13);
-    --color-border-subtle: rgba(148, 163, 184, 0.11);
-    --color-scrollbar-track: rgba(8, 11, 22, 0.68);
-    --color-scrollbar-thumb: rgba(164, 156, 255, 0.48);
-    --color-scrollbar-thumb-hover: rgba(164, 156, 255, 0.72);
+    --color-border: rgba(186, 152, 255, 0.18);
+    --color-border-accent: rgba(186, 152, 255, 0.28);
+    --color-border-subtle: rgba(186, 152, 255, 0.11);
+    --color-scrollbar-track: rgba(8, 12, 35, 0.76);
+    --color-scrollbar-thumb: rgba(186, 152, 255, 0.48);
+    --color-scrollbar-thumb-hover: rgba(186, 152, 255, 0.72);
+    --color-sidebar-background: rgba(8, 12, 35, 0.86);
+    --color-surface-overlay: rgba(37, 21, 70, 0.52);
+    --color-card-start: rgba(37, 21, 70, 0.82);
+    --color-card-end: rgba(21, 16, 53, 0.92);
+    --color-surface-deep: rgba(8, 12, 35, 0.78);
+    --color-surface-inset: rgba(8, 12, 35, 0.42);
+    --color-brand-ink: #120b25;
+    --color-success-border: rgba(91, 224, 195, 0.18);
+    --color-success-soft: rgba(91, 224, 195, 0.14);
+    --color-orb-strong: rgba(186, 152, 255, 0.6);
+    --color-orb-soft: rgba(186, 152, 255, 0.08);
 
     /* Typography */
     --font-family-sans:

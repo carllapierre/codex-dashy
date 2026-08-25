@@ -40,4 +40,61 @@ describe('health route', () => {
 
         await app.close();
     });
+
+    it('accepts an OTLP log batch and persists it once', async () => {
+        const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'codex-dashy-otel-test-'));
+        temporaryDirectories.push(directory);
+        const database = new SqliteDatabase(path.join(directory, 'test.db'));
+        const app = await createApp({
+            database,
+            config: {
+                host: '127.0.0.1',
+                port: 0,
+                databaseFile: path.join(directory, 'test.db'),
+                corsOrigin: 'http://localhost:5173',
+                webDistDirectory: path.join(directory, 'missing-web-dist'),
+            },
+        });
+        const payload = {
+            resourceLogs: [
+                {
+                    scopeLogs: [
+                        {
+                            logRecords: [
+                                {
+                                    attributes: [
+                                        {
+                                            key: 'event.name',
+                                            value: { stringValue: 'codex.user_prompt' },
+                                        },
+                                        {
+                                            key: 'conversation.id',
+                                            value: { stringValue: 'conversation-1' },
+                                        },
+                                    ],
+                                },
+                            ],
+                        },
+                    ],
+                },
+            ],
+        };
+
+        const firstResponse = await app.inject({
+            method: 'POST',
+            url: '/v1/logs',
+            payload,
+        });
+        const duplicateResponse = await app.inject({
+            method: 'POST',
+            url: '/v1/logs',
+            payload,
+        });
+
+        expect(firstResponse.statusCode).toBe(200);
+        expect(duplicateResponse.statusCode).toBe(200);
+        expect(database.getOtelBatchCount()).toBe(1);
+
+        await app.close();
+    });
 });

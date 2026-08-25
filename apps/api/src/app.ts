@@ -3,10 +3,14 @@ import fastifyCors from '@fastify/cors';
 import fastifyStatic from '@fastify/static';
 import Fastify, { type FastifyInstance } from 'fastify';
 import { GetHealthUseCase } from './application/health/get-health.use-case';
+import { IngestOtelLogsUseCase } from './application/telemetry/ingest-otel-logs.use-case';
 import { loadConfig, type AppConfig } from './infrastructure/config/env';
 import { SqliteDatabase } from './infrastructure/persistence/sqlite/sqlite-database';
 import { HealthController } from './interface/http/controllers/health.controller';
+import { OtelLogsController } from './interface/http/controllers/otel-logs.controller';
 import { registerHealthRoutes } from './interface/http/routes/health.routes';
+import { registerOtelRoutes } from './interface/http/routes/otel.routes';
+import { otlpJsonDecoder } from './infrastructure/telemetry/otlp-json.decoder';
 
 export type AppDependencies = {
     config?: AppConfig;
@@ -25,6 +29,9 @@ export async function createApp(dependencies: AppDependencies = {}): Promise<Fas
         now: () => new Date(),
     });
     await registerHealthRoutes(app, new HealthController(getHealth));
+
+    const ingestOtelLogs = new IngestOtelLogsUseCase(otlpJsonDecoder, database);
+    await registerOtelRoutes(app, new OtelLogsController(ingestOtelLogs));
 
     if (fs.existsSync(config.webDistDirectory)) {
         await app.register(fastifyStatic, {

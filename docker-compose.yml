@@ -6,7 +6,7 @@ services:
         env_file:
             - .env
         ports:
-            - '${HOST_PORT:-8789}:8789'
+            - '127.0.0.1:${HOST_PORT:-8789}:8789'
         volumes:
             - ./data:/app/data
         restart: unless-stopped

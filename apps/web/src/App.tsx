@@ -160,26 +160,27 @@ export function App() {
     const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null);
 
     const loadOverview = useCallback(async () => {
-        try {
-            const [response, codexUsageResponse] = await Promise.all([
-                fetch(
-                    `/api/telemetry/overview?range=${range}&model=${encodeURIComponent(model)}&timezone=${encodeURIComponent(localTimeZone)}`,
-                ),
-                fetch('/api/codex/usage'),
-            ]);
+        const [telemetryResult, codexUsageResult] = await Promise.allSettled([
+            fetch(
+                `/api/telemetry/overview?range=${range}&model=${encodeURIComponent(model)}&timezone=${encodeURIComponent(localTimeZone)}`,
+            ),
+            fetch('/api/codex/usage'),
+        ]);
 
-            if (!response.ok) {
-                throw new Error('Unable to load telemetry overview');
+        if (telemetryResult.status === 'fulfilled' && telemetryResult.value.ok) {
+            try {
+                setOverview((await telemetryResult.value.json()) as TelemetryOverview);
+            } catch {
+                // Keep the last successful overview visible while the next poll retries.
             }
+        }
 
-            const nextOverview = (await response.json()) as TelemetryOverview;
-            setOverview(nextOverview);
-
-            if (codexUsageResponse.ok) {
-                setCodexUsage((await codexUsageResponse.json()) as CodexUsageSnapshot);
+        if (codexUsageResult.status === 'fulfilled' && codexUsageResult.value.ok) {
+            try {
+                setCodexUsage((await codexUsageResult.value.json()) as CodexUsageSnapshot);
+            } catch {
+                // Keep the last successful usage snapshot visible while the next poll retries.
             }
-        } catch {
-            // Keep the last successful snapshot visible while the next poll retries.
         }
     }, [model, range]);
 

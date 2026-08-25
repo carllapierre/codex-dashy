@@ -3,6 +3,7 @@ import type {
     CodexUsageQuery,
     CodexUsageSnapshot,
 } from '../../domain/codex/codex-usage';
+import type { TelemetryActivityNotifier } from '../../domain/telemetry/otel-batch';
 
 function unavailable(error: string): CodexUsageSnapshot {
     return {
@@ -48,8 +49,24 @@ function readSnapshot(value: unknown): CodexUsageSnapshot | null {
     };
 }
 
-export class CodexUsageBridgeClient implements CodexUsageQuery {
+export class CodexUsageBridgeClient implements CodexUsageQuery, TelemetryActivityNotifier {
+    private lastActivityNotificationAt = 0;
+
     public constructor(private readonly bridgeUrl: string | undefined) {}
+
+    public notifyActivity(): void {
+        if (!this.bridgeUrl || Date.now() - this.lastActivityNotificationAt < 1_000) {
+            return;
+        }
+
+        this.lastActivityNotificationAt = Date.now();
+        void fetch(`${this.bridgeUrl}/activity`, {
+            method: 'POST',
+            signal: AbortSignal.timeout(1_000),
+        }).catch(() => {
+            // The dashboard remains functional when the optional usage bridge is unavailable.
+        });
+    }
 
     public async getSnapshot(): Promise<CodexUsageSnapshot> {
         if (!this.bridgeUrl) {

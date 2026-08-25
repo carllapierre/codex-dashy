@@ -24,6 +24,10 @@ export type OtlpBatchRepository = {
     save: (batch: OtlpBatch) => boolean;
 };
 
+export type TelemetryActivityNotifier = {
+    notifyActivity: () => void;
+};
+
 export type OtlpBatchQueryRepository = {
     list: () => OtlpBatch[];
 };

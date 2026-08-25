@@ -23,6 +23,7 @@ const host = process.env.CODEX_USAGE_BRIDGE_HOST ?? '127.0.0.1';
 const port = Number(process.env.CODEX_USAGE_BRIDGE_PORT ?? '8790');
 const codexBinary = process.env.CODEX_BINARY ?? 'codex';
 const requestTimeoutMs = 15_000;
+const activityRefreshIntervalMs = 10_000;
 
 const unavailableSnapshot = (): CodexBridgeSnapshot => ({
     available: false,
@@ -41,6 +42,8 @@ class CodexAppServerClient {
     private readonly pending = new Map<number, PendingRequest>();
     private snapshot = unavailableSnapshot();
     private stopping = false;
+    private activityRefreshTimer: ReturnType<typeof setTimeout> | null = null;
+    private lastActivityAt: number | null = null;
 
     public getSnapshot(): CodexBridgeSnapshot {
         return this.snapshot;
@@ -53,6 +56,7 @@ class CodexAppServerClient {
 
     public async stop(): Promise<void> {
         this.stopping = true;
+        this.stopActivityRefresh();
         this.process?.kill();
         this.process = null;
 
@@ -86,6 +90,7 @@ class CodexAppServerClient {
         });
         child.once('exit', () => {
             this.process = null;
+            this.stopActivityRefresh();
             this.snapshot = { ...unavailableSnapshot(), error: 'Codex app-server disconnected.' };
 
             for (const pending of this.pending.values()) {
@@ -118,12 +123,64 @@ class CodexAppServerClient {
         });
         this.notify('initialized');
 
+        await this.refreshAccountData();
+    }
+
+    private async refreshAccountData(): Promise<void> {
         const [rateLimits, usage] = await Promise.all([
             this.request('account/rateLimits/read'),
             this.request('account/usage/read'),
         ]);
         this.applyRateLimits(rateLimits.result as JsonObject | undefined);
         this.applyUsage(usage.result as JsonObject | undefined);
+    }
+
+    public notifyActivity(): void {
+        if (this.stopping || !this.process) {
+            return;
+        }
+
+        this.lastActivityAt = Date.now();
+
+        if (!this.activityRefreshTimer) {
+            this.refreshAccountDataBestEffort();
+            this.scheduleActivityRefresh();
+        }
+    }
+
+    private scheduleActivityRefresh(): void {
+        this.activityRefreshTimer = setTimeout(() => {
+            this.activityRefreshTimer = null;
+
+            if (
+                this.lastActivityAt === null ||
+                Date.now() - this.lastActivityAt >= activityRefreshIntervalMs
+            ) {
+                this.lastActivityAt = null;
+                return;
+            }
+
+            this.refreshAccountDataBestEffort();
+            this.scheduleActivityRefresh();
+        }, activityRefreshIntervalMs);
+    }
+
+    private stopActivityRefresh(): void {
+        if (this.activityRefreshTimer) {
+            clearTimeout(this.activityRefreshTimer);
+            this.activityRefreshTimer = null;
+        }
+
+        this.lastActivityAt = null;
+    }
+
+    private refreshAccountDataBestEffort(): void {
+        void this.refreshAccountData().catch((error: unknown) => {
+            this.snapshot = {
+                ...this.snapshot,
+                error: error instanceof Error ? error.message : 'Unable to refresh Codex usage.',
+            };
+        });
     }
 
     private request(method: string, params?: JsonObject): Promise<JsonObject> {
@@ -238,6 +295,12 @@ function handleRequest(
     response: ServerResponse,
     client: CodexAppServerClient,
 ): void {
+    if (request.method === 'POST' && request.url === '/activity') {
+        client.notifyActivity();
+        sendJson(response, 202, { accepted: true });
+        return;
+    }
+
     if (request.method !== 'GET' || request.url !== '/snapshot') {
         sendJson(response, 404, { error: 'Not found' });
         return;

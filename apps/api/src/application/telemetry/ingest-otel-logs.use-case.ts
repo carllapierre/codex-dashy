@@ -2,6 +2,7 @@ import type {
     OtlpBatch,
     OtlpBatchRepository,
     OtlpLogsDecoder,
+    TelemetryActivityNotifier,
 } from '../../domain/telemetry/otel-batch';
 
 export type IngestOtelLogsResult = {
@@ -17,11 +18,16 @@ export class IngestOtelLogsUseCase {
     public constructor(
         private readonly decoder: OtlpLogsDecoder,
         private readonly repository: OtlpBatchRepository,
+        private readonly activityNotifier?: TelemetryActivityNotifier,
     ) {}
 
     public execute(payload: unknown, receivedAt = new Date()): IngestOtelLogsResult {
         const batch: OtlpBatch = this.decoder.decode(payload, receivedAt);
         const accepted = this.repository.save(batch);
+
+        if (accepted) {
+            this.activityNotifier?.notifyActivity();
+        }
 
         return {
             accepted,

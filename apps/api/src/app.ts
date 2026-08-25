@@ -41,12 +41,11 @@ export async function createApp(dependencies: AppDependencies = {}): Promise<Fas
     });
     await registerHealthRoutes(app, new HealthController(getHealth));
 
-    const getCodexUsage = new GetCodexUsageUseCase(
-        new CodexUsageBridgeClient(config.codexUsageBridgeUrl),
-    );
+    const codexUsageBridge = new CodexUsageBridgeClient(config.codexUsageBridgeUrl);
+    const getCodexUsage = new GetCodexUsageUseCase(codexUsageBridge);
     await registerCodexUsageRoutes(app, new CodexUsageController(getCodexUsage));
 
-    const ingestOtelLogs = new IngestOtelLogsUseCase(otlpJsonDecoder, database);
+    const ingestOtelLogs = new IngestOtelLogsUseCase(otlpJsonDecoder, database, codexUsageBridge);
     await registerOtelRoutes(app, new OtelLogsController(ingestOtelLogs));
 
     const getModelRates = new GetModelRatesUseCase(database);

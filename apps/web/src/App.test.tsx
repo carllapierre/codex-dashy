@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { App } from './App';
 import type { TelemetryOverview } from './features/telemetry/telemetry.types';
@@ -68,6 +68,7 @@ const overview: TelemetryOverview = {
 
 describe('App', () => {
     afterEach(() => {
+        cleanup();
         vi.unstubAllGlobals();
     });
 
@@ -119,5 +120,51 @@ describe('App', () => {
         fireEvent.click(screen.getByRole('button', { name: 'Model rates' }));
         expect(screen.getByRole('heading', { name: 'Model rates', level: 1 })).toBeVisible();
         expect(screen.queryByRole('group', { name: 'Time window' })).not.toBeInTheDocument();
+    });
+
+    it('keeps usage limits visible when the telemetry overview is unavailable', async () => {
+        const fetchMock = vi.fn().mockImplementation((url: string) => {
+            if (url.startsWith('/api/telemetry/overview')) {
+                return Promise.resolve({ ok: false, json: async () => ({}) });
+            }
+
+            return Promise.resolve({
+                ok: true,
+                json: async () => ({
+                    available: true,
+                    fetchedAt: '2026-08-25T19:00:00.000Z',
+                    rateLimits: {
+                        primary: { usedPercent: 4, windowDurationMins: 300 },
+                        secondary: { usedPercent: 7, windowDurationMins: 10_080 },
+                    },
+                    rateLimitsByLimitId: null,
+                    rateLimitResetCredits: null,
+                    usage: null,
+                    error: null,
+                }),
+            });
+        });
+        vi.stubGlobal('fetch', fetchMock);
+
+        render(<App />);
+
+        expect(await screen.findByText('5 hour usage limit')).toBeVisible();
+        expect(screen.getByText('Weekly usage limit')).toBeVisible();
+    });
+
+    it('keeps overview data visible when the usage limits bridge is unavailable', async () => {
+        const fetchMock = vi.fn().mockImplementation((url: string) => {
+            if (url.startsWith('/api/telemetry/overview')) {
+                return Promise.resolve({ ok: true, json: async () => overview });
+            }
+
+            return Promise.resolve({ ok: false, json: async () => ({}) });
+        });
+        vi.stubGlobal('fetch', fetchMock);
+
+        render(<App />);
+
+        expect(await screen.findByRole('heading', { name: 'Codex usage' })).toBeVisible();
+        expect(screen.getByText('Inspect [usage totals](https://example.com/usage)')).toBeVisible();
     });
 });

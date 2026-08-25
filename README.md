@@ -1,5 +1,3 @@
-# Codex Dashy
-
 <p align="center">
     <img src="docs/codex-dashy-banner.svg" alt="Codex Dashy — local Codex telemetry dashboard" width="100%" />
 </p>

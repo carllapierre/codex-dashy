@@ -100,5 +100,8 @@ describe('App', () => {
 
         fireEvent.click(screen.getByRole('button', { name: 'Overview' }));
         expect(screen.getByRole('heading', { name: 'Codex usage' })).toBeVisible();
+        expect(screen.getByRole('button', { name: /Review this prompt/ })).not.toHaveClass(
+            'conversation-item--active',
+        );
     });
 });

@@ -89,6 +89,7 @@ export function Sidebar({
                         {conversations.map((conversation) => (
                             <button
                                 className={`conversation-item ${
+                                    activeView === 'conversation' &&
                                     selectedConversationId === conversation.id
                                         ? 'conversation-item--active'
                                         : ''

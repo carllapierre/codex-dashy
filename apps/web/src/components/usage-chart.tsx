@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { formatCompactNumber } from './ui/animated-number';
 
 type UsageChartProps = {
@@ -5,6 +6,7 @@ type UsageChartProps = {
 };
 
 export function UsageChart({ points }: UsageChartProps) {
+    const [activeIndex, setActiveIndex] = useState<number | null>(null);
     const maxValue = Math.max(...points.map((point) => point.totalTokens), 0);
 
     if (points.length === 0 || maxValue === 0) {
@@ -32,10 +34,31 @@ export function UsageChart({ points }: UsageChartProps) {
     });
     const line = coordinates.map(({ x, y }) => `${x},${y}`).join(' ');
     const area = `${inset},${height - inset} ${line} ${width - inset},${height - inset}`;
+    const activePoint = activeIndex === null ? null : points[activeIndex];
+    const activeCoordinate = activeIndex === null ? null : coordinates[activeIndex];
+    const tooltipAlignment =
+        activeIndex === 0
+            ? 'usage-chart__tooltip--start'
+            : activeIndex === points.length - 1
+              ? 'usage-chart__tooltip--end'
+              : '';
 
     return (
         <div className="usage-chart" role="img" aria-label="Token activity over time">
-            <svg viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none" aria-hidden="true">
+            <svg
+                viewBox={`0 0 ${width} ${height}`}
+                preserveAspectRatio="none"
+                aria-hidden="true"
+                onMouseMove={(event) => {
+                    const bounds = event.currentTarget.getBoundingClientRect();
+                    const position = Math.max(
+                        0,
+                        Math.min(1, (event.clientX - bounds.left) / bounds.width),
+                    );
+                    setActiveIndex(Math.round(position * (points.length - 1)));
+                }}
+                onMouseLeave={() => setActiveIndex(null)}
+            >
                 <defs>
                     <linearGradient id="usage-area-gradient" x1="0" x2="0" y1="0" y2="1">
                         <stop offset="0%" stopColor="var(--color-violet-4)" stopOpacity="0.32" />
@@ -64,6 +87,13 @@ export function UsageChart({ points }: UsageChartProps) {
                     y2={height - inset}
                 />
                 <polygon className="usage-chart__area" points={area} />
+                <rect
+                    className="usage-chart__interaction-layer"
+                    x={inset}
+                    y={inset}
+                    width={chartWidth}
+                    height={chartHeight}
+                />
                 <polyline
                     key={`${points.length}-${points.at(-1)?.totalTokens ?? 0}`}
                     className="usage-chart__line"
@@ -77,7 +107,37 @@ export function UsageChart({ points }: UsageChartProps) {
                         r="4"
                     />
                 ) : null}
+                {activeCoordinate ? (
+                    <>
+                        <line
+                            className="usage-chart__active-guide"
+                            x1={activeCoordinate.x}
+                            x2={activeCoordinate.x}
+                            y1={inset}
+                            y2={height - inset}
+                        />
+                        <circle
+                            className="usage-chart__active-point"
+                            cx={activeCoordinate.x}
+                            cy={activeCoordinate.y}
+                            r="6"
+                        />
+                    </>
+                ) : null}
             </svg>
+            {activePoint && activeCoordinate ? (
+                <div
+                    className={`usage-chart__tooltip ${tooltipAlignment}`}
+                    role="status"
+                    style={{
+                        left: `${(activeCoordinate.x / width) * 100}%`,
+                        top: `${(activeCoordinate.y / height) * 100}%`,
+                    }}
+                >
+                    <span>{activePoint.label}</span>
+                    <strong>{activePoint.totalTokens.toLocaleString('en-US')} tokens</strong>
+                </div>
+            ) : null}
             <div className="usage-chart__labels">
                 <span>{points[0]?.label}</span>
                 <span>{formatCompactNumber(maxValue)} peak</span>

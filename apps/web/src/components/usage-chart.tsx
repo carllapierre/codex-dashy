@@ -23,6 +23,7 @@ export function UsageChart({ points }: UsageChartProps) {
 
     const width = 800;
     const height = 220;
+    const plotHeight = 195;
     const inset = 12;
     const chartWidth = width - inset * 2;
     const chartHeight = height - inset * 2;
@@ -99,39 +100,43 @@ export function UsageChart({ points }: UsageChartProps) {
                     className="usage-chart__line"
                     points={line}
                 />
-                {coordinates.length > 1 ? (
-                    <circle
-                        className="usage-chart__latest"
-                        cx={coordinates.at(-1)?.x}
-                        cy={coordinates.at(-1)?.y}
-                        r="4"
+                {activeCoordinate ? (
+                    <line
+                        className="usage-chart__active-guide"
+                        x1={activeCoordinate.x}
+                        x2={activeCoordinate.x}
+                        y1={inset}
+                        y2={height - inset}
                     />
                 ) : null}
-                {activeCoordinate ? (
-                    <>
-                        <line
-                            className="usage-chart__active-guide"
-                            x1={activeCoordinate.x}
-                            x2={activeCoordinate.x}
-                            y1={inset}
-                            y2={height - inset}
-                        />
-                        <circle
-                            className="usage-chart__active-point"
-                            cx={activeCoordinate.x}
-                            cy={activeCoordinate.y}
-                            r="6"
-                        />
-                    </>
-                ) : null}
             </svg>
+            {coordinates.length > 1 ? (
+                <span
+                    className="usage-chart__latest"
+                    aria-hidden="true"
+                    style={{
+                        left: `${((coordinates.at(-1)?.x ?? 0) / width) * 100}%`,
+                        top: `${((coordinates.at(-1)?.y ?? 0) / height) * plotHeight}px`,
+                    }}
+                />
+            ) : null}
+            {activeCoordinate ? (
+                <span
+                    className="usage-chart__active-dot"
+                    aria-hidden="true"
+                    style={{
+                        left: `${(activeCoordinate.x / width) * 100}%`,
+                        top: `${(activeCoordinate.y / height) * plotHeight}px`,
+                    }}
+                />
+            ) : null}
             {activePoint && activeCoordinate ? (
                 <div
                     className={`usage-chart__tooltip ${tooltipAlignment}`}
                     role="status"
                     style={{
                         left: `${(activeCoordinate.x / width) * 100}%`,
-                        top: `${(activeCoordinate.y / height) * 100}%`,
+                        top: `${(activeCoordinate.y / height) * plotHeight}px`,
                     }}
                 >
                     <span>{activePoint.label}</span>

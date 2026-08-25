@@ -505,7 +505,7 @@ h2 {
 }
 
 .usage-chart__interaction-layer {
-    cursor: crosshair;
+    cursor: default;
     fill: transparent;
 }
 
@@ -527,16 +527,38 @@ h2 {
 }
 
 .usage-chart__active-guide {
-    stroke: var(--color-teal-1);
+    stroke: var(--color-violet-3);
     stroke-dasharray: 3 6;
     stroke-opacity: 0.5;
     stroke-width: 1;
+    transition:
+        x1 var(--motion-duration-fast) var(--motion-ease-standard),
+        x2 var(--motion-duration-fast) var(--motion-ease-standard);
 }
 
-.usage-chart__active-point {
-    fill: var(--color-teal-1);
-    stroke: var(--color-night-2);
-    stroke-width: 3;
+.usage-chart__latest,
+.usage-chart__active-dot {
+    border: 3px solid var(--color-night-2);
+    border-radius: 50%;
+    display: block;
+    height: 12px;
+    pointer-events: none;
+    position: absolute;
+    transform: translate(-50%, -50%);
+    transition:
+        left var(--motion-duration-fast) var(--motion-ease-standard),
+        top var(--motion-duration-fast) var(--motion-ease-standard);
+    width: 12px;
+    z-index: 1;
+}
+
+.usage-chart__latest {
+    background: var(--color-teal-1);
+}
+
+.usage-chart__active-dot {
+    background: var(--color-teal-1);
+    box-shadow: 0 0 0 4px rgba(91, 224, 195, 0.14);
 }
 
 .usage-chart__tooltip {
@@ -550,6 +572,9 @@ h2 {
     pointer-events: none;
     position: absolute;
     transform: translate(-50%, calc(-100% - var(--space-4)));
+    transition:
+        left var(--motion-duration-fast) var(--motion-ease-standard),
+        top var(--motion-duration-fast) var(--motion-ease-standard);
     white-space: nowrap;
     z-index: 1;
 }

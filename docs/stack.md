@@ -19,6 +19,14 @@ npm run dev
 
 The frontend runs at [http://localhost:5173](http://localhost:5173). The API runs at [http://localhost:8789](http://localhost:8789).
 
+For the full local workflow, including the authenticated Codex usage bridge, use:
+
+```bash
+npm run dev:all
+```
+
+The API and Vite frontend reload source changes without rebuilding Docker. If the bridge is already running, this command reuses it instead of starting a second copy. Stop the processes with `Ctrl-C`. Stop the production Docker container first if it is already using port `8789`.
+
 ## Docker
 
 Build and run the dashboard in the background:

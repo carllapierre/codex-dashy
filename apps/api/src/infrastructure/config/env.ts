@@ -20,14 +20,20 @@ function readPort(value: string | undefined): number {
 }
 
 export function loadConfig(): AppConfig {
-    const defaultWebDistDirectory = path.resolve(__dirname, '../../../../../apps/web/dist');
+    const projectRoot = path.resolve(__dirname, '../../../../../');
+    const resolveProjectPath = (value: string | undefined, fallback: string): string =>
+        value
+            ? path.isAbsolute(value)
+                ? value
+                : path.resolve(projectRoot, value)
+            : path.resolve(projectRoot, fallback);
 
     return {
         host: process.env.HOST ?? '0.0.0.0',
         port: readPort(process.env.PORT),
-        databaseFile: process.env.DB_FILE ?? path.resolve('data/codex-dashy.db'),
+        databaseFile: resolveProjectPath(process.env.DB_FILE, 'data/codex-dashy.db'),
         corsOrigin: process.env.CORS_ORIGIN ?? 'http://localhost:5173',
-        webDistDirectory: process.env.WEB_DIST_DIR ?? defaultWebDistDirectory,
+        webDistDirectory: resolveProjectPath(process.env.WEB_DIST_DIR, 'apps/web/dist'),
         codexUsageBridgeUrl: process.env.CODEX_USAGE_BRIDGE_URL ?? 'http://127.0.0.1:8790',
     };
 }

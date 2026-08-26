@@ -23,6 +23,7 @@ export type TelemetryConversation = {
     toolTokens: number;
     totalTokens: number;
     estimatedCostUsd: number | null;
+    unpricedModels: string[];
     completedResponses: number;
     averageTtftMs: number | null;
 };
@@ -42,6 +43,7 @@ export type TelemetrySummary = {
     toolTokens: number;
     totalTokens: number;
     estimatedCostUsd: number | null;
+    unpricedModels: string[];
     conversationCount: number;
     completedResponses: number;
     averageTtftMs: number | null;

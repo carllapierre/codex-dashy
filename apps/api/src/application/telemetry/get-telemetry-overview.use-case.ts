@@ -40,6 +40,7 @@ type UsageAccumulator = {
     ttftValues: number[];
     estimatedCostUsd: number;
     hasUnknownRate: boolean;
+    unpricedModels: string[];
 };
 
 type UsageTotals = Omit<
@@ -105,6 +106,7 @@ function createAccumulator(id: string, timestamp: number): UsageAccumulator {
         ttftValues: [],
         estimatedCostUsd: 0,
         hasUnknownRate: false,
+        unpricedModels: [],
     };
 }
 
@@ -120,6 +122,7 @@ function createTotals(): UsageTotals {
         ttftValues: [],
         estimatedCostUsd: 0,
         hasUnknownRate: false,
+        unpricedModels: [],
     };
 }
 
@@ -147,6 +150,9 @@ function addTokenUsage(
     const cost = calculateEstimatedCostUsd(rate, inputTokens, cachedInputTokens, outputTokens);
     if (cost === null && inputTokens + outputTokens > 0) {
         totals.hasUnknownRate = true;
+        if (model && !totals.unpricedModels.includes(model)) {
+            totals.unpricedModels.push(model);
+        }
     } else if (cost !== null) {
         totals.estimatedCostUsd += cost;
     }
@@ -189,6 +195,7 @@ function toConversation(accumulator: UsageAccumulator): TelemetryConversation {
         ttftValues: accumulator.ttftValues,
         estimatedCostUsd: accumulator.estimatedCostUsd,
         hasUnknownRate: accumulator.hasUnknownRate,
+        unpricedModels: accumulator.unpricedModels,
     };
 
     return {
@@ -206,6 +213,7 @@ function toConversation(accumulator: UsageAccumulator): TelemetryConversation {
         toolTokens: accumulator.toolTokens,
         totalTokens: accumulator.inputTokens + accumulator.outputTokens,
         estimatedCostUsd: toCost(totals),
+        unpricedModels: accumulator.unpricedModels,
         completedResponses: accumulator.completedResponses,
         averageTtftMs: toAverage(accumulator.ttftValues),
     };
@@ -466,6 +474,7 @@ export class GetTelemetryOverviewUseCase {
             toolTokens: totals.toolTokens,
             totalTokens: totals.inputTokens + totals.outputTokens,
             estimatedCostUsd: toCost(totals),
+            unpricedModels: totals.unpricedModels,
             conversationCount: conversationList.length,
             completedResponses: totals.completedResponses,
             averageTtftMs: toAverage(totals.ttftValues),

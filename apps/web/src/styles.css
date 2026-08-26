@@ -269,7 +269,7 @@ button {
 }
 
 .eyebrow {
-    margin: 0 0 var(--space-5);
+    margin: 0 0 var(--space-7);
 }
 
 h1,
@@ -496,6 +496,34 @@ h2 {
     font-weight: var(--font-weight-semibold);
     letter-spacing: var(--tracking-tight);
     margin-top: var(--space-8);
+}
+
+.warning-message {
+    align-items: center;
+    background: var(--color-panel-background);
+    border: 1px solid var(--color-border);
+    border-left: 3px solid var(--color-violet-3);
+    border-radius: var(--radius-md);
+    color: var(--color-text-secondary);
+    display: flex;
+    font-size: var(--font-size-sm);
+    gap: var(--space-3);
+    margin: 0 0 var(--space-7);
+    padding: var(--space-4) var(--space-5);
+}
+
+.warning-message__icon {
+    align-items: center;
+    background: var(--color-accent-soft);
+    border-radius: 50%;
+    color: var(--color-violet-3);
+    display: inline-flex;
+    flex: 0 0 18px;
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-bold);
+    height: 18px;
+    justify-content: center;
+    width: 18px;
 }
 
 .stat-card__suffix {

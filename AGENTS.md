@@ -23,6 +23,7 @@ This is a small proof of concept, but it should remain easy to extend. Prefer cl
 
 - Use plain CSS and reusable component classes. Tailwind is intentionally not used.
 - Treat `apps/web/src/styles/tokens.css` as the design-system source of truth for palette, typography, spacing, shape, elevation, and motion.
+- Before creating feature-specific UI, check whether the pattern can be expressed as a reusable generic component. Prefer small, semantic primitives with content or behavior supplied through props over duplicated markup and one-off styles.
 - Use semantic tokens in component styles; add a new primitive only when an existing token cannot express the intended design.
 - Prefer component-level semantic classes over one-off inline styles or arbitrary values.
 - Keep dark-theme and reduced-motion behavior centralized in the token layer.

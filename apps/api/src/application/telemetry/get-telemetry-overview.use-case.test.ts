@@ -207,4 +207,35 @@ describe('GetTelemetryOverviewUseCase', () => {
 
         expect(overview.summary.estimatedCostUsd).toBeCloseTo(0.000303, 8);
     });
+
+    it('reports models without configured rates when an estimate is unavailable', () => {
+        const batch = createBatch();
+        batch.events.push({
+            eventName: 'codex.sse_event',
+            observedAt: '2026-08-25T11:45:00.000Z',
+            conversationId: 'conversation-unknown-rate',
+            model: 'codex-auto-review',
+            attributes: {
+                input_token_count: 100,
+                output_token_count: 10,
+            },
+        });
+
+        const useCase = new GetTelemetryOverviewUseCase(
+            { list: () => [batch] },
+            modelRates,
+            () => new Date('2026-08-25T12:00:00.000Z'),
+        );
+
+        const overview = useCase.execute('1d');
+
+        expect(overview.summary.estimatedCostUsd).toBeNull();
+        expect(overview.summary.unpricedModels).toEqual(['codex-auto-review']);
+        expect(
+            overview.conversations.find(({ id }) => id === 'conversation-unknown-rate'),
+        ).toMatchObject({
+            estimatedCostUsd: null,
+            unpricedModels: ['codex-auto-review'],
+        });
+    });
 });

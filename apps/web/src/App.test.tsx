@@ -16,6 +16,7 @@ const overview: TelemetryOverview = {
         toolTokens: 1_020,
         totalTokens: 1_020,
         estimatedCostUsd: 0.000206,
+        unpricedModels: [],
         conversationCount: 2,
         completedResponses: 1,
         averageTtftMs: 500,
@@ -52,6 +53,7 @@ const overview: TelemetryOverview = {
             toolTokens: 1_020,
             totalTokens: 1_020,
             estimatedCostUsd: 0.000206,
+            unpricedModels: [],
             completedResponses: 1,
             averageTtftMs: 500,
         },
@@ -85,6 +87,7 @@ const overview: TelemetryOverview = {
             toolTokens: 2_030,
             totalTokens: 2_030,
             estimatedCostUsd: 0.00406,
+            unpricedModels: [],
             completedResponses: 1,
             averageTtftMs: 700,
         },
@@ -184,6 +187,30 @@ describe('App', () => {
 
         expect(await screen.findByText('5 hour usage limit')).toBeVisible();
         expect(screen.getByText('Weekly usage limit')).toBeVisible();
+    });
+
+    it('explains when an estimated cost is unavailable for an unpriced model', async () => {
+        const overviewWithUnpricedModel: TelemetryOverview = {
+            ...overview,
+            summary: {
+                ...overview.summary,
+                estimatedCostUsd: null,
+                unpricedModels: ['codex-auto-review'],
+            },
+        };
+        const fetchMock = vi.fn().mockResolvedValue({
+            ok: true,
+            json: async () => overviewWithUnpricedModel,
+        });
+        vi.stubGlobal('fetch', fetchMock);
+
+        render(<App />);
+
+        expect(
+            await screen.findByText(
+                'Estimated cost is unavailable because no rate is configured for codex-auto-review.',
+            ),
+        ).toBeVisible();
     });
 
     it('keeps the conversation view usable while an older API payload is still cached', async () => {

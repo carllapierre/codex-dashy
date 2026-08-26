@@ -6,6 +6,7 @@ import { PromptTimeline } from './components/prompt-timeline';
 import { Sidebar } from './components/sidebar';
 import { UsageChart } from './components/usage-chart';
 import { StatCard } from './components/ui/stat-card';
+import { WarningMessage } from './components/ui/warning-message';
 import type {
     TelemetryConversation,
     CodexUsageSnapshot,
@@ -60,6 +61,20 @@ function getConversationPrompts(conversation: TelemetryConversation) {
     ];
 }
 
+function UnpricedCostWarning({ models }: { models: string[] }) {
+    if (models.length === 0) {
+        return null;
+    }
+
+    const modelLabel = models.join(', ');
+
+    return (
+        <WarningMessage>
+            Estimated cost is unavailable because no rate is configured for {modelLabel}.
+        </WarningMessage>
+    );
+}
+
 function ConversationDetail({
     conversation,
     range,
@@ -100,6 +115,7 @@ function ConversationDetail({
                     </span>
                 </div>
             </div>
+            <UnpricedCostWarning models={conversation.unpricedModels} />
             <PromptTimeline prompts={getConversationPrompts(conversation)} />
             <section
                 className="stats-grid conversation-detail__stats"
@@ -282,6 +298,7 @@ export function App() {
 
                 {isOverview ? (
                     <>
+                        <UnpricedCostWarning models={summary?.unpricedModels ?? []} />
                         <section className="stats-grid" aria-label="Usage summary">
                             <StatCard
                                 label="Total tokens"
@@ -307,7 +324,6 @@ export function App() {
                                 format={formatMilliseconds}
                             />
                         </section>
-
                         <section className="overview-visuals">
                             <section className="content-card chart-card">
                                 <div className="section-heading">

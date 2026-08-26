@@ -13,4 +13,5 @@ services:
             - '127.0.0.1:${HOST_PORT:-8789}:8789'
         volumes:
             - ./data:/app/data
+        stop_grace_period: 30s
         restart: unless-stopped

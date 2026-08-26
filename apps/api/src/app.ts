@@ -37,6 +37,7 @@ export async function createApp(dependencies: AppDependencies = {}): Promise<Fas
 
     const getHealth = new GetHealthUseCase({
         isDatabaseHealthy: () => database.isHealthy(),
+        isDatabaseIntegrityHealthy: () => database.isIntegrityHealthy(),
         now: () => new Date(),
     });
     await registerHealthRoutes(app, new HealthController(getHealth));

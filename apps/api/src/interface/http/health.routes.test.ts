@@ -36,6 +36,7 @@ describe('health route', () => {
             status: 'ok',
             service: 'codex-dashy-api',
             database: 'ok',
+            databaseIntegrity: 'ok',
         });
 
         await app.close();

@@ -13,21 +13,50 @@ import type {
 } from '../../../domain/telemetry/otel-batch';
 import { runMigrations } from './migrations';
 
+const integrityCheckIntervalMs = 6 * 60 * 60 * 1_000;
+
 export class SqliteDatabase
     implements OtlpBatchRepository, OtlpBatchQueryRepository, ModelRateRepository
 {
     private readonly database: Database.Database;
+    private readonly integrityCheckTimer: NodeJS.Timeout;
+    private databaseIntegrityHealthy = false;
 
     public constructor(filename: string) {
         fs.mkdirSync(path.dirname(path.resolve(filename)), { recursive: true });
         this.database = new Database(filename);
         this.database.pragma('journal_mode = WAL');
+        this.database.pragma('synchronous = FULL');
+        this.database.pragma('busy_timeout = 5000');
+        this.database.pragma('wal_autocheckpoint = 1000');
         runMigrations(this.database);
+        this.refreshIntegrityStatus();
+        this.integrityCheckTimer = setInterval(
+            () => this.refreshIntegrityStatus(),
+            integrityCheckIntervalMs,
+        );
+        this.integrityCheckTimer.unref();
     }
 
     public isHealthy(): boolean {
         const result = this.database.prepare('SELECT 1 AS ok').get() as { ok?: number } | undefined;
         return result?.ok === 1;
+    }
+
+    public isIntegrityHealthy(): boolean {
+        return this.databaseIntegrityHealthy;
+    }
+
+    private refreshIntegrityStatus(): void {
+        try {
+            const results = this.database.prepare('PRAGMA integrity_check').all() as Array<{
+                integrity_check?: string;
+            }>;
+            this.databaseIntegrityHealthy =
+                results.length === 1 && results[0]?.integrity_check === 'ok';
+        } catch {
+            this.databaseIntegrityHealthy = false;
+        }
     }
 
     public save(batch: OtlpBatch): boolean {
@@ -176,6 +205,7 @@ export class SqliteDatabase
     }
 
     public close(): void {
+        clearInterval(this.integrityCheckTimer);
         this.database.close();
     }
 }

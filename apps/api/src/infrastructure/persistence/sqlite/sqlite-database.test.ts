@@ -19,6 +19,7 @@ describe('SqliteDatabase model rates', () => {
         const filename = path.join(directory, 'test.db');
         const database = new SqliteDatabase(filename);
 
+        expect(database.isIntegrityHealthy()).toBe(true);
         expect(
             database.listModelRates().find(({ model }) => model === 'gpt-5.6-luna'),
         ).toMatchObject({

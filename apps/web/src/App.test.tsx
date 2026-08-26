@@ -82,7 +82,9 @@ describe('App', () => {
         render(<App />);
 
         expect(await screen.findByRole('heading', { name: 'Codex usage' })).toBeVisible();
-        expect(screen.getByText('Inspect [usage totals](https://example.com/usage)')).toBeVisible();
+        expect(
+            await screen.findByText('Inspect [usage totals](https://example.com/usage)'),
+        ).toBeVisible();
         expect(screen.getByRole('option', { name: 'gpt-5.6-terra' })).toBeVisible();
 
         fireEvent.click(screen.getByRole('button', { name: '1 day' }));
@@ -165,6 +167,8 @@ describe('App', () => {
         render(<App />);
 
         expect(await screen.findByRole('heading', { name: 'Codex usage' })).toBeVisible();
-        expect(screen.getByText('Inspect [usage totals](https://example.com/usage)')).toBeVisible();
+        expect(
+            await screen.findByText('Inspect [usage totals](https://example.com/usage)'),
+        ).toBeVisible();
     });
 });

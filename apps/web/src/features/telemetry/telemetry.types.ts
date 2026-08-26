@@ -35,9 +35,18 @@ export type ModelRate = {
     updatedAt: string;
 };
 
+export type TelemetryPrompt = {
+    id: string;
+    text: string;
+    timestamp: string;
+    model: string | null;
+    characterCount: number;
+};
+
 export type TelemetryConversation = {
     id: string;
     initialPrompt: string | null;
+    prompts: TelemetryPrompt[];
     startedAt: string;
     lastActivityAt: string;
     model: string | null;

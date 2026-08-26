@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { App } from './App';
 import type { TelemetryOverview } from './features/telemetry/telemetry.types';
@@ -32,6 +32,15 @@ const overview: TelemetryOverview = {
         {
             id: 'conversation-1',
             initialPrompt: 'Inspect [usage totals](https://example.com/usage)',
+            prompts: [
+                {
+                    id: 'conversation-1-prompt-1',
+                    text: 'Inspect [usage totals](https://example.com/usage)',
+                    timestamp: '2026-08-25T11:00:00.000Z',
+                    model: 'gpt-5.6-luna',
+                    characterCount: 49,
+                },
+            ],
             startedAt: '2026-08-25T11:00:00.000Z',
             lastActivityAt: '2026-08-25T11:01:00.000Z',
             model: 'gpt-5.6-luna',
@@ -49,6 +58,22 @@ const overview: TelemetryOverview = {
         {
             id: 'conversation-2',
             initialPrompt: 'Review this prompt '.repeat(24),
+            prompts: [
+                {
+                    id: 'conversation-2-prompt-1',
+                    text: 'Review this prompt '.repeat(24),
+                    timestamp: '2026-08-25T10:00:00.000Z',
+                    model: 'gpt-5.6-terra',
+                    characterCount: 'Review this prompt '.repeat(24).length,
+                },
+                {
+                    id: 'conversation-2-prompt-2',
+                    text: 'Now show the key findings from the review.',
+                    timestamp: '2026-08-25T10:30:00.000Z',
+                    model: 'gpt-5.6-terra',
+                    characterCount: 42,
+                },
+            ],
             startedAt: '2026-08-25T10:00:00.000Z',
             lastActivityAt: '2026-08-25T10:30:00.000Z',
             model: 'gpt-5.6-terra',
@@ -98,10 +123,16 @@ describe('App', () => {
         expect(screen.getByRole('heading', { name: 'Conversation usage' })).toBeVisible();
         expect(screen.getByRole('region', { name: 'Conversation summary' })).toBeVisible();
         expect(screen.getByRole('region', { name: 'Conversation token breakdown' })).toBeVisible();
-        expect(screen.getByRole('button', { name: 'Show full prompt' })).toBeVisible();
+        expect(screen.getByRole('region', { name: 'Conversation prompts' })).toBeVisible();
+        expect(screen.getByRole('button', { name: /Follow-up 1/ })).toBeVisible();
 
-        fireEvent.click(screen.getByRole('button', { name: 'Show full prompt' }));
-        expect(screen.getByRole('button', { name: 'Collapse prompt' })).toBeVisible();
+        fireEvent.click(screen.getByRole('button', { name: /Follow-up 1/ }));
+        expect(
+            within(screen.getByRole('region', { name: 'Follow-up 1 content' })).getByText(
+                'Now show the key findings from the review.',
+            ),
+        ).toBeVisible();
+        expect(screen.getAllByText('Now show the key findings from the review.')).toHaveLength(1);
 
         fireEvent.click(screen.getByRole('button', { name: 'Overview' }));
         expect(screen.getByRole('heading', { name: 'Codex usage' })).toBeVisible();
@@ -114,6 +145,7 @@ describe('App', () => {
                 name: /Inspect \[usage totals\]\(https:\/\/example\.com\/usage\)/,
             }),
         );
+        fireEvent.click(screen.getByRole('button', { name: /Initial prompt/ }));
         expect(await screen.findByRole('link', { name: 'usage totals' })).toHaveAttribute(
             'href',
             'https://example.com/usage',
@@ -152,6 +184,33 @@ describe('App', () => {
 
         expect(await screen.findByText('5 hour usage limit')).toBeVisible();
         expect(screen.getByText('Weekly usage limit')).toBeVisible();
+    });
+
+    it('keeps the conversation view usable while an older API payload is still cached', async () => {
+        const legacyOverview = {
+            ...overview,
+            conversations: overview.conversations.map((conversation) => {
+                const legacyConversation = { ...conversation };
+                delete (legacyConversation as { prompts?: unknown }).prompts;
+                return legacyConversation;
+            }),
+        } as unknown as TelemetryOverview;
+        const fetchMock = vi.fn().mockResolvedValue({
+            ok: true,
+            json: async () => legacyOverview,
+        });
+        vi.stubGlobal('fetch', fetchMock);
+
+        render(<App />);
+
+        fireEvent.click(
+            await screen.findByRole('button', {
+                name: /Inspect \[usage totals\]\(https:\/\/example\.com\/usage\)/,
+            }),
+        );
+
+        expect(await screen.findByRole('heading', { name: 'gpt-5.6-luna' })).toBeVisible();
+        expect(screen.getByRole('button', { name: /Initial prompt/ })).toBeVisible();
     });
 
     it('keeps overview data visible when the usage limits bridge is unavailable', async () => {

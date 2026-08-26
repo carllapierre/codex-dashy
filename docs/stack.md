@@ -25,7 +25,7 @@ For the full local workflow, including the authenticated Codex usage bridge, use
 npm run dev:all
 ```
 
-The API and Vite frontend reload source changes without rebuilding Docker. If the bridge is already running, this command reuses it instead of starting a second copy. Stop the processes with `Ctrl-C`. Stop the production Docker container first if it is already using port `8789`.
+Open [http://localhost:5173](http://localhost:5173) for the live Vite dashboard during development. Port `8789` is the development API and OTLP endpoint; its root page is only the last built frontend and is not hot-reloaded. The API and Vite frontend reload source changes without rebuilding Docker. If the bridge is already running, this command reuses it instead of starting a second copy. Stop the processes with `Ctrl-C`. Stop the production Docker container first if it is already using port `8789`.
 
 ## Docker
 

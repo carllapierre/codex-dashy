@@ -23,6 +23,8 @@ npm run start:all
 
 Open the dashboard at [http://localhost:8789](http://localhost:8789). Stop both processes with `Ctrl-C`.
 
+For source development with hot reload, use `npm run dev:all` and open [http://localhost:5173](http://localhost:5173). The `8789` page is the Docker/production dashboard and requires a rebuild to reflect frontend changes.
+
 ## Documentation
 
 For the stack, architecture, telemetry behavior, local development, and testing guidance, see the [documentation section](docs/README.md).

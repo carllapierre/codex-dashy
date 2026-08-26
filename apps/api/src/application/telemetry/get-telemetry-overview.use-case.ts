@@ -5,6 +5,7 @@ import type {
 } from '../../domain/telemetry/otel-batch';
 import type { ModelRate, ModelRateQueryRepository } from '../../domain/settings/model-rate';
 import {
+    type TelemetryPrompt,
     type TelemetryConversation,
     type TelemetryOverview,
     type TelemetryRange,
@@ -21,7 +22,11 @@ const RANGE_DAYS: Record<TelemetryRange, number> = {
 
 type UsageAccumulator = {
     id: string;
-    initialPrompt: string | null;
+    prompts: Array<{
+        timestamp: number;
+        text: string;
+        model: string | null;
+    }>;
     startedAt: number;
     lastActivityAt: number;
     model: string | null;
@@ -39,7 +44,7 @@ type UsageAccumulator = {
 
 type UsageTotals = Omit<
     UsageAccumulator,
-    'id' | 'initialPrompt' | 'startedAt' | 'lastActivityAt' | 'reasoningEfforts'
+    'id' | 'prompts' | 'startedAt' | 'lastActivityAt' | 'reasoningEfforts'
 >;
 
 function readNumber(attributes: Record<string, TelemetryAttribute>, key: string): number {
@@ -86,7 +91,7 @@ function readDate(value: string | null | undefined): Date | null {
 function createAccumulator(id: string, timestamp: number): UsageAccumulator {
     return {
         id,
-        initialPrompt: null,
+        prompts: [],
         startedAt: timestamp,
         lastActivityAt: timestamp,
         model: null,
@@ -164,6 +169,15 @@ function toAverage(values: number[]): number | null {
 }
 
 function toConversation(accumulator: UsageAccumulator): TelemetryConversation {
+    const prompts: TelemetryPrompt[] = [...accumulator.prompts]
+        .sort((left, right) => left.timestamp - right.timestamp)
+        .map((prompt, index) => ({
+            id: `${accumulator.id}-prompt-${index + 1}`,
+            text: prompt.text,
+            timestamp: new Date(prompt.timestamp).toISOString(),
+            model: prompt.model,
+            characterCount: prompt.text.length,
+        }));
     const totals: UsageTotals = {
         model: accumulator.model,
         inputTokens: accumulator.inputTokens,
@@ -179,7 +193,8 @@ function toConversation(accumulator: UsageAccumulator): TelemetryConversation {
 
     return {
         id: accumulator.id,
-        initialPrompt: accumulator.initialPrompt,
+        initialPrompt: prompts[0]?.text ?? null,
+        prompts,
         startedAt: new Date(accumulator.startedAt).toISOString(),
         lastActivityAt: new Date(accumulator.lastActivityAt).toISOString(),
         model: accumulator.model,
@@ -417,7 +432,15 @@ export class GetTelemetryOverviewUseCase {
                 }
 
                 if (event.eventName === 'codex.user_prompt') {
-                    accumulator.initialPrompt ??= readUserPrompt(attributes);
+                    const prompt = readUserPrompt(attributes);
+
+                    if (prompt) {
+                        accumulator.prompts.push({
+                            timestamp: event.timestamp,
+                            text: prompt,
+                            model: event.model,
+                        });
+                    }
                 }
 
                 if (event.eventName === 'codex.turn_ttft') {

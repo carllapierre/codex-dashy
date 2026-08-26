@@ -2,10 +2,10 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { EmptyChart } from './components/empty-chart';
 import { CodexUsageLimits } from './components/codex-usage-limits';
 import { ModelRatesPage } from './components/model-rates-page';
+import { PromptTimeline } from './components/prompt-timeline';
 import { Sidebar } from './components/sidebar';
 import { UsageChart } from './components/usage-chart';
 import { StatCard } from './components/ui/stat-card';
-import { MarkdownContent } from './components/ui/markdown-content';
 import type {
     TelemetryConversation,
     CodexUsageSnapshot,
@@ -40,6 +40,26 @@ function getRangeLabel(range: TelemetryRange): string {
     return rangeOptions.find((option) => option.value === range)?.label ?? range;
 }
 
+function getConversationPrompts(conversation: TelemetryConversation) {
+    if (conversation.prompts?.length) {
+        return conversation.prompts;
+    }
+
+    if (!conversation.initialPrompt) {
+        return [];
+    }
+
+    return [
+        {
+            id: `${conversation.id}-prompt-1`,
+            text: conversation.initialPrompt,
+            timestamp: conversation.startedAt,
+            model: conversation.model,
+            characterCount: conversation.initialPrompt.length,
+        },
+    ];
+}
+
 function ConversationDetail({
     conversation,
     range,
@@ -49,12 +69,6 @@ function ConversationDetail({
     range: TelemetryRange;
     model: string;
 }) {
-    const [promptExpanded, setPromptExpanded] = useState(false);
-
-    useEffect(() => {
-        setPromptExpanded(false);
-    }, [conversation?.id]);
-
     if (!conversation) {
         return (
             <section className="content-card empty-state">
@@ -66,10 +80,6 @@ function ConversationDetail({
             </section>
         );
     }
-
-    const prompt = conversation.initialPrompt ?? 'Prompt unavailable';
-    const canExpandPrompt = prompt.length > 320;
-    const promptId = `conversation-prompt-${conversation.id}`;
 
     return (
         <section className="content-card conversation-detail" aria-label="Conversation details">
@@ -90,26 +100,7 @@ function ConversationDetail({
                     </span>
                 </div>
             </div>
-            <div
-                className={`conversation-detail__prompt ${
-                    promptExpanded ? 'conversation-detail__prompt--expanded' : ''
-                }`}
-            >
-                <span className="detail-label">Initial prompt</span>
-                <MarkdownContent content={prompt} id={promptId} />
-                {canExpandPrompt ? (
-                    <button
-                        className="conversation-detail__prompt-toggle"
-                        type="button"
-                        aria-controls={promptId}
-                        aria-expanded={promptExpanded}
-                        onClick={() => setPromptExpanded((expanded) => !expanded)}
-                    >
-                        {promptExpanded ? 'Collapse prompt' : 'Show full prompt'}
-                        <span aria-hidden="true">{promptExpanded ? '↑' : '↓'}</span>
-                    </button>
-                ) : null}
-            </div>
+            <PromptTimeline prompts={getConversationPrompts(conversation)} />
             <section
                 className="stats-grid conversation-detail__stats"
                 aria-label="Conversation summary"

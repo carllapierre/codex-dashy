@@ -40,6 +40,13 @@ function createBatch(): OtlpBatch {
                 },
             },
             {
+                eventName: 'codex.user_prompt',
+                observedAt: '2026-08-25T11:01:30.000Z',
+                conversationId: 'conversation-1',
+                model: 'gpt-5.6-luna',
+                attributes: { prompt: 'Show the follow-up usage' },
+            },
+            {
                 eventName: 'codex.turn_ttft',
                 observedAt: '2026-08-25T11:01:01.000Z',
                 conversationId: 'conversation-1',
@@ -139,6 +146,22 @@ describe('GetTelemetryOverviewUseCase', () => {
         expect(overview.conversations[0]).toMatchObject({
             id: 'conversation-1',
             initialPrompt: 'Inspect usage',
+            prompts: [
+                {
+                    id: 'conversation-1-prompt-1',
+                    text: 'Inspect usage',
+                    timestamp: '2026-08-25T11:00:00.000Z',
+                    model: 'gpt-5.6-luna',
+                    characterCount: 13,
+                },
+                {
+                    id: 'conversation-1-prompt-2',
+                    text: 'Show the follow-up usage',
+                    timestamp: '2026-08-25T11:01:30.000Z',
+                    model: 'gpt-5.6-luna',
+                    characterCount: 24,
+                },
+            ],
             model: 'gpt-5.6-luna',
             reasoningEfforts: ['high'],
             totalTokens: 1020,

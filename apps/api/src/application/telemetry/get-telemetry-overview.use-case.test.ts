@@ -208,7 +208,7 @@ describe('GetTelemetryOverviewUseCase', () => {
         expect(overview.summary.estimatedCostUsd).toBeCloseTo(0.000303, 8);
     });
 
-    it('reports models without configured rates when an estimate is unavailable', () => {
+    it('estimates cost for the codex auto-review proxy rate', () => {
         const batch = createBatch();
         batch.events.push({
             eventName: 'codex.sse_event',
@@ -229,13 +229,13 @@ describe('GetTelemetryOverviewUseCase', () => {
 
         const overview = useCase.execute('1d');
 
-        expect(overview.summary.estimatedCostUsd).toBeNull();
-        expect(overview.summary.unpricedModels).toEqual(['codex-auto-review']);
+        expect(overview.summary.estimatedCostUsd).not.toBeNull();
+        expect(overview.summary.unpricedModels).toEqual([]);
         expect(
             overview.conversations.find(({ id }) => id === 'conversation-unknown-rate'),
         ).toMatchObject({
-            estimatedCostUsd: null,
-            unpricedModels: ['codex-auto-review'],
+            estimatedCostUsd: 0.000032,
+            unpricedModels: [],
         });
     });
 });

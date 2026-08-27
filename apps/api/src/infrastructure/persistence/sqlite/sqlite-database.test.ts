@@ -27,6 +27,13 @@ describe('SqliteDatabase model rates', () => {
             cachedInputPerMillionUsd: 0.02,
             outputPerMillionUsd: 1.2,
         });
+        expect(
+            database.listModelRates().find(({ model }) => model === 'codex-auto-review'),
+        ).toMatchObject({
+            inputPerMillionUsd: 0.2,
+            cachedInputPerMillionUsd: 0.02,
+            outputPerMillionUsd: 1.2,
+        });
 
         database.updateModelRate('gpt-5.6-luna', {
             inputPerMillionUsd: 0.3,

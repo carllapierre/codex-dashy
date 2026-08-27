@@ -1,6 +1,12 @@
 import type { ModelRateValues } from '../../domain/settings/model-rate';
 
 export const DEFAULT_MODEL_RATES: Record<string, ModelRateValues> = {
+    // Internal Codex label with no public rate; use the current low-cost model as a proxy.
+    'codex-auto-review': {
+        inputPerMillionUsd: 0.2,
+        cachedInputPerMillionUsd: 0.02,
+        outputPerMillionUsd: 1.2,
+    },
     'gpt-5.6-sol': {
         inputPerMillionUsd: 4,
         cachedInputPerMillionUsd: 0.4,

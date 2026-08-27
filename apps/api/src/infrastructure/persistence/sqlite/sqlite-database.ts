@@ -11,7 +11,7 @@ import type {
     OtlpBatchQueryRepository,
     OtlpBatchRepository,
 } from '../../../domain/telemetry/otel-batch';
-import { runMigrations } from './migrations';
+import { runMigrations } from './migration-runner';
 
 const integrityCheckIntervalMs = 6 * 60 * 60 * 1_000;
 

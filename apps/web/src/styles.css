@@ -257,6 +257,7 @@ button {
 .main-content {
     margin: 0 auto;
     max-width: 1320px;
+    min-width: 0;
     padding: var(--space-13) var(--space-14) var(--space-15);
     width: 100%;
 }
@@ -844,6 +845,7 @@ h2 {
 }
 
 .prompt-timeline__meta > span:last-child {
+    min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -883,14 +885,19 @@ h2 {
     color: var(--color-text-secondary);
     font-size: var(--font-size-sm);
     line-height: 1.5;
+    max-width: 100%;
     min-height: 0;
+    min-width: 0;
     overflow: hidden;
+    overflow-wrap: anywhere;
     padding: 0 var(--space-5) var(--space-5);
 }
 
 .prompt-timeline__expanded-text .markdown-content {
     font-size: var(--font-size-sm);
     line-height: 1.4;
+    max-width: 100%;
+    min-width: 0;
 }
 
 .prompt-timeline__expanded-text .markdown-content > :first-child {
@@ -903,6 +910,13 @@ h2 {
 
 .prompt-timeline__expanded-text .markdown-content p {
     margin: 0 0 var(--space-3);
+    white-space: pre-wrap;
+}
+
+.prompt-timeline__expanded-text .markdown-content pre {
+    max-width: 100%;
+    overflow-x: auto;
+    overflow-wrap: anywhere;
     white-space: pre-wrap;
 }
 

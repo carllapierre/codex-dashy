@@ -18,6 +18,10 @@ describe('UsageChart', () => {
             throw new Error('Expected chart SVG');
         }
 
+        const line = container.querySelector('.usage-chart__line');
+        expect(line?.tagName).toBe('polyline');
+        expect(line).toHaveAttribute('pathLength', '1');
+
         Object.defineProperty(svg, 'getBoundingClientRect', {
             configurable: true,
             value: () => ({ left: 0, width: 800 }),

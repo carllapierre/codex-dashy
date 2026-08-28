@@ -99,6 +99,7 @@ export function UsageChart({ points }: UsageChartProps) {
                     key={`${points.length}-${points.at(-1)?.totalTokens ?? 0}`}
                     className="usage-chart__line"
                     points={line}
+                    pathLength={1}
                 />
                 {activeCoordinate ? (
                     <line

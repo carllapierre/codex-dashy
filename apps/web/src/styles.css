@@ -619,8 +619,8 @@ h2 {
     stroke-linecap: round;
     stroke-linejoin: round;
     stroke-width: 3;
-    stroke-dasharray: 1200;
-    stroke-dashoffset: 1200;
+    stroke-dasharray: 1;
+    stroke-dashoffset: 1;
     animation: draw-usage-line 700ms var(--motion-ease-standard) forwards;
 }
 

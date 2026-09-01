@@ -37,10 +37,6 @@ function formatMilliseconds(value: number): string {
     return Math.round(value).toLocaleString('en-US');
 }
 
-function getRangeLabel(range: TelemetryRange): string {
-    return rangeOptions.find((option) => option.value === range)?.label ?? range;
-}
-
 function getConversationPrompts(conversation: TelemetryConversation) {
     if (conversation.prompts?.length) {
         return conversation.prompts;
@@ -75,15 +71,7 @@ function UnpricedCostWarning({ models }: { models: string[] }) {
     );
 }
 
-function ConversationDetail({
-    conversation,
-    range,
-    model,
-}: {
-    conversation: TelemetryConversation | null;
-    range: TelemetryRange;
-    model: string;
-}) {
+function ConversationDetail({ conversation }: { conversation: TelemetryConversation | null }) {
     if (!conversation) {
         return (
             <section className="content-card empty-state">
@@ -104,9 +92,6 @@ function ConversationDetail({
                     <h2>{conversation.model ?? 'Model unavailable'}</h2>
                 </div>
                 <div className="conversation-detail__metadata">
-                    <span className="muted-label">
-                        {getRangeLabel(range)} · {model === 'all' ? 'All models' : model}
-                    </span>
                     <span className="muted-label">
                         Reasoning:{' '}
                         {conversation.reasoningEfforts.length > 0
@@ -165,6 +150,9 @@ export function App() {
     const [overview, setOverview] = useState<TelemetryOverview | null>(null);
     const [codexUsage, setCodexUsage] = useState<CodexUsageSnapshot | null>(null);
     const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null);
+    const [conversationDetail, setConversationDetail] = useState<TelemetryConversation | null>(
+        null,
+    );
 
     const loadOverview = useCallback(async () => {
         const [telemetryResult, codexUsageResult] = await Promise.allSettled([
@@ -192,11 +180,55 @@ export function App() {
     }, [model, range]);
 
     useEffect(() => {
-        void loadOverview();
-        const intervalId = window.setInterval(() => void loadOverview(), 5_000);
+        let requestInFlight = false;
+        const refresh = async () => {
+            if (requestInFlight) {
+                return;
+            }
+
+            requestInFlight = true;
+            try {
+                await loadOverview();
+            } finally {
+                requestInFlight = false;
+            }
+        };
+
+        void refresh();
+        const intervalId = window.setInterval(() => void refresh(), 5_000);
 
         return () => window.clearInterval(intervalId);
     }, [loadOverview]);
+
+    useEffect(() => {
+        if (activeView !== 'conversation' || !selectedConversationId) {
+            setConversationDetail(null);
+            return;
+        }
+
+        let cancelled = false;
+        setConversationDetail(null);
+        void fetch(`/api/telemetry/conversations/${encodeURIComponent(selectedConversationId)}`)
+            .then(async (response) => {
+                if (!response.ok) {
+                    return null;
+                }
+
+                return (await response.json()) as TelemetryConversation;
+            })
+            .then((detail) => {
+                if (!cancelled) {
+                    setConversationDetail(detail);
+                }
+            })
+            .catch(() => {
+                // Keep the lightweight overview summary available if detail loading fails.
+            });
+
+        return () => {
+            cancelled = true;
+        };
+    }, [activeView, selectedConversationId]);
 
     useEffect(() => {
         const firstConversation = overview?.conversations[0];
@@ -213,6 +245,10 @@ export function App() {
         () => overview?.conversations.find(({ id }) => id === selectedConversationId) ?? null,
         [overview, selectedConversationId],
     );
+    const selectedConversationDetail =
+        conversationDetail?.id === selectedConversationId
+            ? conversationDetail
+            : selectedConversation;
     const summary = overview?.summary;
     const availableModels = overview?.availableModels ?? [];
     const selectConversation = useCallback((conversationId: string) => {
@@ -256,7 +292,7 @@ export function App() {
                     </div>
                 </header>
 
-                {!isSettings ? (
+                {isOverview ? (
                     <section
                         className="filter-bar"
                         aria-label={`${isOverview ? 'Overview' : 'Conversation'} filters`}
@@ -345,11 +381,7 @@ export function App() {
                 ) : isSettings ? (
                     <ModelRatesPage onSaved={() => setActiveView('overview')} />
                 ) : (
-                    <ConversationDetail
-                        conversation={selectedConversation}
-                        range={range}
-                        model={model}
-                    />
+                    <ConversationDetail conversation={selectedConversationDetail} />
                 )}
             </main>
         </div>

@@ -6,6 +6,7 @@ import { GetHealthUseCase } from './application/health/get-health.use-case';
 import { GetCodexUsageUseCase } from './application/codex/get-codex-usage.use-case';
 import { GetModelRatesUseCase } from './application/settings/get-model-rates.use-case';
 import { GetTelemetryOverviewUseCase } from './application/telemetry/get-telemetry-overview.use-case';
+import { GetTelemetryConversationUseCase } from './application/telemetry/get-telemetry-conversation.use-case';
 import { IngestOtelLogsUseCase } from './application/telemetry/ingest-otel-logs.use-case';
 import { UpdateModelRateUseCase } from './application/settings/update-model-rate.use-case';
 import { loadConfig, type AppConfig } from './infrastructure/config/env';
@@ -16,6 +17,7 @@ import { CodexUsageController } from './interface/http/controllers/codex-usage.c
 import { ModelRatesController } from './interface/http/controllers/model-rates.controller';
 import { OtelLogsController } from './interface/http/controllers/otel-logs.controller';
 import { TelemetryOverviewController } from './interface/http/controllers/telemetry-overview.controller';
+import { TelemetryConversationController } from './interface/http/controllers/telemetry-conversation.controller';
 import { registerHealthRoutes } from './interface/http/routes/health.routes';
 import { registerCodexUsageRoutes } from './interface/http/routes/codex-usage.routes';
 import { registerModelRatesRoutes } from './interface/http/routes/model-rates.routes';
@@ -54,7 +56,12 @@ export async function createApp(dependencies: AppDependencies = {}): Promise<Fas
     await registerModelRatesRoutes(app, new ModelRatesController(getModelRates, updateModelRate));
 
     const getTelemetryOverview = new GetTelemetryOverviewUseCase(database, database);
-    await registerTelemetryRoutes(app, new TelemetryOverviewController(getTelemetryOverview));
+    const getTelemetryConversation = new GetTelemetryConversationUseCase(database, database);
+    await registerTelemetryRoutes(
+        app,
+        new TelemetryOverviewController(getTelemetryOverview),
+        new TelemetryConversationController(getTelemetryConversation),
+    );
 
     if (fs.existsSync(config.webDistDirectory)) {
         await app.register(fastifyStatic, {

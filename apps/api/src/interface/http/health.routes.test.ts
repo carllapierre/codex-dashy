@@ -72,6 +72,10 @@ describe('health route', () => {
                                             key: 'conversation.id',
                                             value: { stringValue: 'conversation-1' },
                                         },
+                                        {
+                                            key: 'prompt',
+                                            value: { stringValue: 'Inspect usage' },
+                                        },
                                     ],
                                 },
                             ],
@@ -95,6 +99,18 @@ describe('health route', () => {
         expect(firstResponse.statusCode).toBe(200);
         expect(duplicateResponse.statusCode).toBe(200);
         expect(database.getOtelBatchCount()).toBe(1);
+
+        const detailResponse = await app.inject({
+            method: 'GET',
+            url: '/api/telemetry/conversations/conversation-1',
+        });
+
+        expect(detailResponse.statusCode).toBe(200);
+        expect(detailResponse.json()).toMatchObject({
+            id: 'conversation-1',
+            initialPrompt: 'Inspect usage',
+            prompts: [{ text: 'Inspect usage' }],
+        });
 
         await app.close();
     });

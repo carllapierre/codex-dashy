@@ -15,6 +15,7 @@ describe('runMigrations', () => {
             { version: '0001_initial' },
             { version: '0002_model_rates' },
             { version: '0003_codex_auto_review_rate' },
+            { version: '0004_telemetry_projections' },
         ]);
         expect(
             database
@@ -24,9 +25,15 @@ describe('runMigrations', () => {
                 .all(),
         ).toEqual([
             { name: 'app_metadata' },
+            { name: 'conversation_prompts' },
+            { name: 'conversation_summaries' },
+            { name: 'conversation_usage_buckets' },
             { name: 'model_rates' },
             { name: 'otel_batches' },
             { name: 'schema_migrations' },
+            { name: 'telemetry_internal_conversations' },
+            { name: 'telemetry_projection_batches' },
+            { name: 'usage_buckets' },
         ]);
 
         database.close();

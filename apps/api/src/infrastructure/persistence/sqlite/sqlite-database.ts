@@ -11,14 +11,37 @@ import type {
     OtlpBatchQueryRepository,
     OtlpBatchRepository,
 } from '../../../domain/telemetry/otel-batch';
+import type {
+    TelemetryConversationProjection,
+    TelemetryProjectionQueryRepository,
+    TelemetryUsageBucket,
+} from '../../../domain/telemetry/telemetry-projection';
 import { runMigrations } from './migration-runner';
+import { SqliteTelemetryProjectionRepository } from './sqlite-telemetry-projection-repository';
 
 const integrityCheckIntervalMs = 6 * 60 * 60 * 1_000;
 
+type StoredBatchRow = {
+    dedupeKey: string;
+    receivedAt: string;
+    eventCount: number;
+    eventNames: string;
+    conversationIds: string;
+    models: string;
+    projectCandidates: string;
+    events: string;
+    sanitizedPayload: string;
+};
+
 export class SqliteDatabase
-    implements OtlpBatchRepository, OtlpBatchQueryRepository, ModelRateRepository
+    implements
+        OtlpBatchRepository,
+        OtlpBatchQueryRepository,
+        TelemetryProjectionQueryRepository,
+        ModelRateRepository
 {
     private readonly database: Database.Database;
+    private readonly telemetryProjections: SqliteTelemetryProjectionRepository;
     private readonly integrityCheckTimer: NodeJS.Timeout;
     private databaseIntegrityHealthy = false;
 
@@ -30,6 +53,8 @@ export class SqliteDatabase
         this.database.pragma('busy_timeout = 5000');
         this.database.pragma('wal_autocheckpoint = 1000');
         runMigrations(this.database);
+        this.telemetryProjections = new SqliteTelemetryProjectionRepository(this.database);
+        this.telemetryProjections.backfill();
         this.refreshIntegrityStatus();
         this.integrityCheckTimer = setInterval(
             () => this.refreshIntegrityStatus(),
@@ -60,41 +85,55 @@ export class SqliteDatabase
     }
 
     public save(batch: OtlpBatch): boolean {
-        const result = this.database
-            .prepare(
-                `INSERT OR IGNORE INTO otel_batches (
-                    dedupe_key,
-                    received_at,
-                    event_count,
-                    event_names_json,
-                    conversation_ids_json,
-                    models_json,
-                    project_candidates_json,
-                    events_json,
-                    payload_json
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-            )
-            .run(
-                batch.dedupeKey,
-                batch.receivedAt,
-                batch.eventCount,
-                JSON.stringify(batch.eventNames),
-                JSON.stringify(batch.conversationIds),
-                JSON.stringify(batch.models),
-                JSON.stringify(batch.projectCandidates),
-                JSON.stringify(batch.events),
-                JSON.stringify(batch.sanitizedPayload),
-            );
+        const saveBatch = this.database.transaction((): boolean => {
+            const result = this.database
+                .prepare(
+                    `INSERT OR IGNORE INTO otel_batches (
+                        dedupe_key,
+                        received_at,
+                        event_count,
+                        event_names_json,
+                        conversation_ids_json,
+                        models_json,
+                        project_candidates_json,
+                        events_json,
+                        payload_json
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                )
+                .run(
+                    batch.dedupeKey,
+                    batch.receivedAt,
+                    batch.eventCount,
+                    JSON.stringify(batch.eventNames),
+                    JSON.stringify(batch.conversationIds),
+                    JSON.stringify(batch.models),
+                    JSON.stringify(batch.projectCandidates),
+                    JSON.stringify(batch.events),
+                    JSON.stringify(batch.sanitizedPayload),
+                );
 
-        return result.changes > 0;
+            if (result.changes === 0) {
+                return false;
+            }
+
+            const row = this.database
+                .prepare('SELECT id FROM otel_batches WHERE dedupe_key = ?')
+                .get(batch.dedupeKey) as { id: number } | undefined;
+            if (!row) {
+                throw new Error('Unable to locate saved telemetry batch');
+            }
+
+            this.telemetryProjections.projectBatch(batch, row.id);
+            return true;
+        });
+
+        return saveBatch();
     }
 
     public getOtelBatchCount(): number {
         const result = this.database
             .prepare('SELECT COUNT(*) AS count FROM otel_batches')
-            .get() as {
-            count?: number;
-        };
+            .get() as { count?: number };
 
         return result.count ?? 0;
     }
@@ -112,36 +151,37 @@ export class SqliteDatabase
                     project_candidates_json AS projectCandidates,
                     events_json AS events,
                     payload_json AS sanitizedPayload
-                FROM otel_batches
-                ORDER BY id ASC`,
+                 FROM otel_batches
+                 ORDER BY id ASC`,
             )
-            .all() as Array<{
-            dedupeKey: string;
-            receivedAt: string;
-            eventCount: number;
-            eventNames: string;
-            conversationIds: string;
-            models: string;
-            projectCandidates: string;
-            events: string;
-            sanitizedPayload: string;
-        }>;
+            .all() as StoredBatchRow[];
 
-        return rows.map((row) => ({
-            dedupeKey: row.dedupeKey,
-            receivedAt: row.receivedAt,
-            eventCount: row.eventCount,
-            eventNames: JSON.parse(row.eventNames) as string[],
-            conversationIds: JSON.parse(row.conversationIds) as string[],
-            models: JSON.parse(row.models) as string[],
-            projectCandidates: JSON.parse(row.projectCandidates) as string[],
-            events: JSON.parse(row.events) as OtlpBatch['events'],
-            sanitizedPayload: JSON.parse(row.sanitizedPayload) as unknown,
-        }));
+        return rows.map((row) => this.parseStoredBatch(row));
+    }
+
+    public listUsageBuckets(since: string, model: string | null): TelemetryUsageBucket[] {
+        return this.telemetryProjections.listUsageBuckets(since, model);
+    }
+
+    public listConversationProjections(
+        since: string,
+        model: string | null,
+    ): TelemetryConversationProjection[] {
+        return this.telemetryProjections.listConversationProjections(since, model);
+    }
+
+    public getConversationProjection(
+        conversationId: string,
+    ): TelemetryConversationProjection | null {
+        return this.telemetryProjections.getConversationProjection(conversationId);
+    }
+
+    public listAvailableModels(since: string): string[] {
+        return this.telemetryProjections.listAvailableModels(since);
     }
 
     public listModelRates(): ModelRate[] {
-        const rows = this.database
+        return this.database
             .prepare(
                 `SELECT
                     model,
@@ -149,12 +189,10 @@ export class SqliteDatabase
                     cached_input_per_million_usd AS cachedInputPerMillionUsd,
                     output_per_million_usd AS outputPerMillionUsd,
                     updated_at AS updatedAt
-                FROM model_rates
-                ORDER BY model ASC`,
+                 FROM model_rates
+                 ORDER BY model ASC`,
             )
             .all() as ModelRate[];
-
-        return rows;
     }
 
     public updateModelRate(model: string, values: ModelRateValues): ModelRate {
@@ -192,8 +230,8 @@ export class SqliteDatabase
                     cached_input_per_million_usd AS cachedInputPerMillionUsd,
                     output_per_million_usd AS outputPerMillionUsd,
                     updated_at AS updatedAt
-                FROM model_rates
-                WHERE model = ?`,
+                 FROM model_rates
+                 WHERE model = ?`,
             )
             .get(normalizedModel) as ModelRate | undefined;
 
@@ -207,5 +245,19 @@ export class SqliteDatabase
     public close(): void {
         clearInterval(this.integrityCheckTimer);
         this.database.close();
+    }
+
+    private parseStoredBatch(row: StoredBatchRow): OtlpBatch {
+        return {
+            dedupeKey: row.dedupeKey,
+            receivedAt: row.receivedAt,
+            eventCount: row.eventCount,
+            eventNames: JSON.parse(row.eventNames) as string[],
+            conversationIds: JSON.parse(row.conversationIds) as string[],
+            models: JSON.parse(row.models) as string[],
+            projectCandidates: JSON.parse(row.projectCandidates) as string[],
+            events: JSON.parse(row.events) as OtlpBatch['events'],
+            sanitizedPayload: JSON.parse(row.sanitizedPayload) as unknown,
+        };
     }
 }

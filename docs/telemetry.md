@@ -19,6 +19,8 @@ The dashboard uses the conversation ID, initial user prompt, observed model, tok
 
 The overview supports one-day, one-week, and one-month calendar windows based on the browser's local time zone, plus filtering by observed model. Internal Codex title-generation sessions are excluded from conversation counts and usage totals so they do not appear as duplicate user conversations.
 
+Raw batches remain available for recovery, but dashboard queries use derived hourly and conversation projections. On upgrade, the API automatically converts existing batches in resumable transactions; no manual data migration command is required.
+
 ## Usage limits
 
 The host bridge uses the supported [Codex App Server](https://learn.chatgpt.com/docs/app-server) interface to read authenticated five-hour, weekly, and workspace allowance data when Codex provides it. Accepted OTLP batches trigger an immediate refresh, followed by refreshes every 10 seconds while telemetry activity continues. Polling stops after 10 seconds without a new batch, while rate-limit notifications are still applied immediately. The frontend displays an explicit unavailable state when the bridge cannot be reached; it never invents usage values.

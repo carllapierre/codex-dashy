@@ -8,20 +8,20 @@
         "apps/web"
     ],
     "scripts": {
-        "build": "npm run build --workspace=apps/api && npm run build --workspace=apps/web",
+        "build": "npm --workspace=apps/api run build && npm --workspace=apps/web run build",
         "codex:bridge": "tsx tools/codex-usage-bridge.ts",
         "codex:bridge:dev": "tsx tools/start-codex-usage-bridge-dev.ts",
-        "dev": "concurrently --names api,web --prefix-colors blue,green \"npm run dev --workspace=apps/api\" \"npm run dev --workspace=apps/web\"",
+        "dev": "concurrently --names api,web --prefix-colors blue,green \"npm --workspace=apps/api run dev\" \"npm --workspace=apps/web run dev\"",
         "dev:all": "concurrently --kill-others --names bridge,dev --prefix-colors blue,green \"npm run codex:bridge:dev\" \"npm run dev\"",
         "start:all": "concurrently --kill-others --names bridge,dashboard --prefix-colors blue,green \"npm run codex:bridge\" \"docker compose up --build\"",
         "format": "prettier --write .",
         "format:check": "prettier --check .",
         "lint": "eslint .",
-        "start": "npm run start --workspace=apps/api",
-        "test": "npm run test --workspaces --if-present",
-        "test:coverage": "npm run test:coverage --workspaces --if-present",
+        "start": "npm --workspace=apps/api run start",
+        "test": "npm --workspace=apps/api run test && npm --workspace=apps/web run test",
+        "test:coverage": "npm --workspace=apps/api run test:coverage && npm --workspace=apps/web run test:coverage",
         "test:e2e": "playwright test",
-        "typecheck": "npm run typecheck --workspace=apps/api && npm run typecheck --workspace=apps/web",
+        "typecheck": "npm --workspace=apps/api run typecheck && npm --workspace=apps/web run typecheck",
         "verify": "npm run lint && npm run typecheck && npm run test && npm run format:check && npm run build"
     },
     "devDependencies": {

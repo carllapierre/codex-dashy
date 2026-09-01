@@ -39,4 +39,6 @@ The React app owns view state for the overview, conversations, model filters, ti
 
 ## Persistence
 
-SQLite stores sanitized OTLP batches, model-rate settings, and migration metadata. Raw credentials and authorization headers are not persisted. Estimated cost is calculated from the stored editable model-rate table and is not subscription billing.
+SQLite keeps sanitized OTLP batches as the raw archive, while indexed projection tables hold hourly usage buckets, conversation summaries, prompt timelines, and per-conversation usage buckets. Overview reads use only those projections; conversation detail loads its prompt chain separately through `GET /api/telemetry/conversations/:id`.
+
+The projection migration backfills existing raw batches in small, idempotent transactions. A projection marker is written with each converted batch, so an interrupted startup resumes from the remaining batches and duplicate ingestion cannot double-count usage. Raw credentials and authorization headers are not persisted. Estimated cost is calculated from the stored editable model-rate table and is not subscription billing.
